@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class DetailsPage extends StatefulWidget {
     final List<(String, String)> details;
-    final Function setDetails;
-    DetailsPage(this.details, this.setDetails);
+    final Function setMainState;
+    DetailsPage(this.details, this.setMainState);
 
     @override
     State<DetailsPage> createState() => DetailsPageState();
@@ -24,8 +24,8 @@ class DetailsPageState extends State<DetailsPage> {
                     new IconButton(
                         icon: new Icon(Icons.done),
                         onPressed: (){
-                            widget.setDetails(i, widget.details[i].$1, ftext);
-                            setState((){ });
+                            setState((){ widget.details[i] = (widget.details[i].$1, ftext); });
+                            widget.setMainState();
                             Navigator.pop(context);
                         }
                     ),

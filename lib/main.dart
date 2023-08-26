@@ -33,8 +33,8 @@ class HomePageState extends State<HomePage> {
         ("LinkedIn", "@john.doe"),
     ];
 
-    void setDetails(int i, String key, String value) {
-        setState((){ details[i] = (key, value); });
+    void setMainState() {
+        setState((){});
     }
 
 
@@ -74,7 +74,7 @@ class HomePageState extends State<HomePage> {
                             trailing: new Icon(Icons.list_alt),
                             onTap: () => Navigator.of(context).push(
                                 new MaterialPageRoute(
-                                    builder: (BuildContext context) => new DetailsPage(details, setDetails)
+                                    builder: (BuildContext context) => new DetailsPage(details, setMainState)
                                 )
                             )
                         ),
