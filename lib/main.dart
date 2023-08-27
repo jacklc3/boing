@@ -1,8 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:location/location.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 
 import 'details.dart';
 import 'friends.dart';
@@ -37,7 +35,7 @@ class HomePageState extends State<HomePage> {
         ("Email", "john.doe@gmail.com"),
         ("LinkedIn", "@john.doe"),
     ];
-    late StreamSubscription<Position> mPositionStream;
+    final Location mLocation = Location();
 
     void setMainState() {
         setState((){});
@@ -46,42 +44,48 @@ class HomePageState extends State<HomePage> {
     @override
     void initState() {
         super.initState();
-        initPositionStream();
+        initLocation();
     }
 
-    void initPositionStream() async {
-        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-            print('Location services are disabled.');
-            return;
-        }
+    void initLocation() async {
+        bool _serviceEnabled;
+        PermissionStatus _permissionGranted;
 
-        LocationPermission permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.deniedForever) {
-            print( 'Location permissions are permanently denied, we cannot request permissions.');
-            return;
-        }
-        if (permission == LocationPermission.denied) {
-            permission = await Geolocator.requestPermission();
-            if (permission == LocationPermission.denied) {
-                print('Location permissions are denied');
+        _serviceEnabled = await mLocation.serviceEnabled();
+        if (!_serviceEnabled) {
+            _serviceEnabled = await mLocation.requestService();
+            if (!_serviceEnabled) {
                 return;
             }
         }
 
-        final locationSettings = LocationSettings(accuracy: LocationAccuracy.low, distanceFilter: 5000);
-        mPositionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
-            (Position? position) { getLocationFromPosition(position); });
+        _permissionGranted = await mLocation.hasPermission();
+        if (_permissionGranted == PermissionStatus.denied) {
+            _permissionGranted = await mLocation.requestPermission();
+            if (_permissionGranted != PermissionStatus.granted) {
+                return;
+            }
+        }
+
+        mLocation.onLocationChanged.listen((LocationData location) {
+            print(location);
+            getLocation(location);
+        });
     }
 
-    Future<void> getLocationFromPosition(Position? position) async {
-        print(position);
-        if (position != null) {
-            List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+    Future<void> getLocation(LocationData location) async {
+        if (location.latitude != null && location.longitude != null) {
+            List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(
+                location.latitude!, location.longitude!);
             if (placemarks != null && placemarks.isNotEmpty) {
-                Placemark placemark = placemarks.first;
-                print(placemark);
-                String loc = '${placemark.locality}, ${placemark.country}';
+                geocoding.Placemark p = placemarks.first;
+                String loc = "";
+                if (p.locality != null && !p.locality!.isEmpty)
+                    loc += p.locality! + ", ";
+                else if (p.subAdministrativeArea != null && !p.subAdministrativeArea!.isEmpty)
+                    loc += p.subAdministrativeArea! + ", ";
+                if (p.country != null)
+                    loc += p.country!;
                 setState((){ mDetails[1] = (mDetails[1].$1, loc); });
             }
         }
