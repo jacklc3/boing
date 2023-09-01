@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 class FriendsPage extends StatelessWidget {
+  const FriendsPage({super.key});
+
     @override
     Widget build(BuildContext context) {
-        return new Scaffold(
-            appBar: new AppBar(title: new Text("Friends")),
-            body: new Center(child: new Text("You have none :("))
+        return Scaffold(
+            appBar: AppBar(title: const Text("Friends")),
+            body: const Center(child: Text("You have none :("))
         );
     }
 }

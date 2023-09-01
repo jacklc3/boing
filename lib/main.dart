@@ -6,10 +6,12 @@ import 'details.dart';
 import 'friends.dart';
 
 void main() {
-  runApp(new Application());
+  runApp(const Application());
 }
 
 class Application extends StatelessWidget {
+  const Application({super.key});
+
     @override
     Widget build(BuildContext context) {
         return MaterialApp(
@@ -18,12 +20,14 @@ class Application extends StatelessWidget {
                 colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
                 useMaterial3: true,
             ),
-            home: new HomePage()
+            home: const HomePage()
         );
     }
 }
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
     @override
     State<HomePage> createState() => HomePageState();
 }
@@ -48,21 +52,21 @@ class HomePageState extends State<HomePage> {
     }
 
     void initLocation() async {
-        bool _serviceEnabled;
-        PermissionStatus _permissionGranted;
+        bool serviceEnabled;
+        PermissionStatus permissionGranted;
 
-        _serviceEnabled = await mLocation.serviceEnabled();
-        if (!_serviceEnabled) {
-            _serviceEnabled = await mLocation.requestService();
-            if (!_serviceEnabled) {
+        serviceEnabled = await mLocation.serviceEnabled();
+        if (!serviceEnabled) {
+            serviceEnabled = await mLocation.requestService();
+            if (!serviceEnabled) {
                 return;
             }
         }
 
-        _permissionGranted = await mLocation.hasPermission();
-        if (_permissionGranted == PermissionStatus.denied) {
-            _permissionGranted = await mLocation.requestPermission();
-            if (_permissionGranted != PermissionStatus.granted) {
+        permissionGranted = await mLocation.hasPermission();
+        if (permissionGranted == PermissionStatus.denied) {
+            permissionGranted = await mLocation.requestPermission();
+            if (permissionGranted != PermissionStatus.granted) {
                 return;
             }
         }
@@ -77,15 +81,16 @@ class HomePageState extends State<HomePage> {
         if (location.latitude != null && location.longitude != null) {
             List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(
                 location.latitude!, location.longitude!);
-            if (placemarks != null && placemarks.isNotEmpty) {
+            if (placemarks.isNotEmpty) {
                 geocoding.Placemark p = placemarks.first;
                 String loc = "";
-                if (p.locality != null && !p.locality!.isEmpty)
-                    loc += p.locality! + ", ";
-                else if (p.subAdministrativeArea != null && !p.subAdministrativeArea!.isEmpty)
-                    loc += p.subAdministrativeArea! + ", ";
-                if (p.country != null)
-                    loc += p.country!;
+                if (p.locality != null && p.locality!.isNotEmpty) {
+                  loc += "${p.locality!}, ";
+                } else if (p.subAdministrativeArea != null && p.subAdministrativeArea!.isNotEmpty)
+                    loc += "${p.subAdministrativeArea!}, ";
+                if (p.country != null) {
+                  loc += p.country!;
+                }
                 setState((){ mDetails[1] = (mDetails[1].$1, loc); });
             }
         }
@@ -96,38 +101,38 @@ class HomePageState extends State<HomePage> {
         return Scaffold(
             appBar: AppBar(
                 backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-                title: Text("Boing!!!"),
+                title: const Text("Boing!!!"),
             ),
-            body: Center(
-                child: const Text("Time to go boing!!"),
+            body: const Center(
+                child: Text("Time to go boing!!"),
             ),
-            drawer: new Drawer(
+            drawer: Drawer(
                 child: ListView(
                     children: <Widget>[
-                        new UserAccountsDrawerHeader(
-                            accountName: new Text(mDetails[0].$2),
-                            accountEmail: new Text(mDetails[1].$2),
-                            currentAccountPicture: new CircleAvatar(
+                        UserAccountsDrawerHeader(
+                            accountName: Text(mDetails[0].$2),
+                            accountEmail: Text(mDetails[1].$2),
+                            currentAccountPicture: const CircleAvatar(
                                 backgroundColor: Colors.black26,
-                                child: new Text(":)")
+                                child: Text(":)")
                             ),
-                            decoration: new BoxDecoration(color: Theme.of(context).colorScheme.primary)
+                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
                         ),
-                        new ListTile(
-                            title: new Text("Friends"),
-                            trailing: new Icon(Icons.people),
+                        ListTile(
+                            title: const Text("Friends"),
+                            trailing: const Icon(Icons.people),
                             onTap: () => Navigator.of(context).push(
-                                new MaterialPageRoute(
-                                    builder: (BuildContext context) => new FriendsPage()
+                                MaterialPageRoute(
+                                    builder: (BuildContext context) => const FriendsPage()
                                 )
                             )
                         ),
-                        new ListTile(
-                            title: new Text("Details"),
-                            trailing: new Icon(Icons.list_alt),
+                        ListTile(
+                            title: const Text("Details"),
+                            trailing: const Icon(Icons.list_alt),
                             onTap: () => Navigator.of(context).push(
-                                new MaterialPageRoute(
-                                    builder: (BuildContext context) => new DetailsPage(mDetails, setMainState)
+                                MaterialPageRoute(
+                                    builder: (BuildContext context) => DetailsPage(mDetails, setMainState)
                                 )
                             )
                         ),
