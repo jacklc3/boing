@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "944824835558",
+    "project_id": "boing-fb",
+    "storage_bucket": "boing-fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:944824835558:android:ce4ece396b7de3d329ca27",
+        "android_client_info": {
+          "package_name": "com.example.boing"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX12hrV-wG8jkIq41M-CaUJDvjcUqiNRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
