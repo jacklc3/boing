@@ -36,10 +36,13 @@ class QrScannerPageState extends State<QrScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Friends")),
+      appBar: AppBar(
+        title: const Text("Add Friends"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
       body: Column(children: <Widget>[
         Container(
-          color: Colors.deepPurple,
+          color: Theme.of(context).colorScheme.primary,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
@@ -152,9 +155,13 @@ class QrScannerPageState extends State<QrScannerPage> {
       if (scanData.code != null) {
         setState(() { scanning = false; });
         FirebaseFirestore.instance.collection("network")
-          .doc(scanData.code!).update({
-            "received": FirebaseAuth.instance.currentUser!.uid
-          });
+          .doc(scanData.code!)
+          .set({
+            "requests": FieldValue.arrayUnion([
+              FirebaseAuth.instance.currentUser!.uid
+            ])},
+            SetOptions(merge: true),
+          );
       }
     });
   }

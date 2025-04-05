@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'qr_scanner.dart';
-import 'task_card.dart';
+import 'friend_card.dart';
+import 'request_page.dart';
 
 class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
@@ -14,12 +15,20 @@ class FriendsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Friends"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.add_reaction_outlined),
             tooltip: "Add friends",
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (BuildContext context) => const QrScannerPage()
+            ))
+          ),
+          IconButton(
+            icon: const Icon(Icons.emoji_people_outlined),
+            tooltip: "Friend requests",
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (BuildContext context) => const RequestPage()
             ))
           ),
         ],
@@ -40,11 +49,11 @@ class FriendsPage extends StatelessWidget {
             return ListView.builder(
               itemCount: snapshot.data!["friends"].length,
               itemBuilder: (context, index) {
-                return FutureBuilder(
-                  future: FirebaseFirestore.instance
+                return StreamBuilder(
+                  stream: FirebaseFirestore.instance
                     .collection("data")
                     .doc(snapshot.data!["friends"][index])
-                    .get(),
+                    .snapshots(),
                   builder: (context, friendSnapshot) {
                     if (friendSnapshot.connectionState == ConnectionState.waiting
                         || !friendSnapshot.hasData
@@ -52,32 +61,17 @@ class FriendsPage extends StatelessWidget {
                     ) {
                       return Container();
                     }
-                    return Row(
-                      children: [
-                        Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                            image:
-                              DecorationImage(
-                                image: NetworkImage(
-                                  friendSnapshot.data!["photo"] == ""
-                                    ? "https://www.clipartmax.com/png/middle/214-2143742_individuals-whatsapp-profile-picture-icon.png"
-                                    : friendSnapshot.data!["photo"]
-                                ),
-                              ),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        Expanded(
-                          child: TaskCard(
-                            headerText:
-                              friendSnapshot.data!["name"],
-                            descriptionText:
-                              friendSnapshot.data!["location"],
-                          ),
-                        ),
-                      ],
+                    return Container( 
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey, width: 2.0),
+                        )
+                      ),
+                      child: FriendCard(
+                        name: friendSnapshot.data!["name"],
+                        location: friendSnapshot.data!["location"],
+                        photo: friendSnapshot.data!["photo"],
+                      )
                     );
                   }
                 );
