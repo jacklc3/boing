@@ -1,8 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'login_page.dart';
-
 class SignUpPage extends StatefulWidget {
   static route() => MaterialPageRoute(
         builder: (context) => const SignUpPage(),
@@ -14,6 +12,7 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -33,7 +32,9 @@ class _SignUpPageState extends State<SignUpPage> {
               password: passwordController.text.trim());
       print(userCredential);
     } on FirebaseAuthException catch (e) {
-      print(e.message); // We should notify the user here
+      scaffoldKey.currentState?.showSnackBar(
+        SnackBar(content: Text(e.message ?? "Failed to create an account"))
+      );
     }
   }
 

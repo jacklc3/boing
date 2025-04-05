@@ -14,6 +14,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -33,7 +35,9 @@ class _LoginPageState extends State<LoginPage> {
               password: passwordController.text.trim());
       print(userCredential);
     } on FirebaseAuthException catch (e) {
-      print(e.message); // We should do something else here
+      scaffoldKey.currentState?.showSnackBar(
+        SnackBar(content: Text(e.message ?? "Failed to log in"))
+      );
     }
   }
 

@@ -3,9 +3,9 @@ import 'package:location/location.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
-import 'details.dart';
 import 'friends.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
@@ -36,48 +36,41 @@ class Application extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.data != null) {
-                return HomePage(snapshot.data!);
+                return HomePage(Details(
+                    snapshot.data?.uid ?? "",
+                    snapshot.data?.displayName ?? "",
+                    snapshot.data?.email ?? "",
+                    snapshot.data?.phoneNumber ?? "",
+                    snapshot.data?.photoURL ?? ""));
               }
               return const LoginPage();
             }));
   }
 }
 
-class HomePage extends StatefulWidget {
-  final User mUser;
+class Details {
+  Details(
+      this.uid, this.displayName, this.email, this.phoneNumber, this.photoURL);
+  final String uid;
+  final String displayName;
+  final String email;
+  final String phoneNumber;
+  final String photoURL;
+  String location = "";
+}
 
-  const HomePage(this.mUser, {super.key});
+class HomePage extends StatefulWidget {
+  final Details details;
+
+  const HomePage(this.details, {super.key});
 
   @override
   State<HomePage> createState() => HomePageState();
 }
 
 class HomePageState extends State<HomePage> {
-  HomePageState() {
-    mDetails = [
-      (
-        "Name",
-        FirebaseAuth.instance.currentUser?.displayName == null
-            ? ""
-            : FirebaseAuth.instance.currentUser!.displayName!
-      ),
-      ("Location", ""),
-      (
-        "Email",
-        FirebaseAuth.instance.currentUser?.email == null
-            ? ""
-            : FirebaseAuth.instance.currentUser!.email!
-      ),
-    ];
-  }
-
-  late List<(String, String)> mDetails;
   final Location mLocation = Location();
   StreamSubscription<LocationData>? mLocationSub;
-
-  void setMainState() {
-    setState(() {});
-  }
 
   @override
   void initState() {
@@ -115,20 +108,36 @@ class HomePageState extends State<HomePage> {
       List<geocoding.Placemark> placemarks = await geocoding
           .placemarkFromCoordinates(location.latitude!, location.longitude!);
       if (placemarks.isNotEmpty) {
-        geocoding.Placemark p = placemarks.first;
+        geocoding.Placemark placemark = placemarks.first;
         String loc = "";
-        if (p.country != null) {
-          if (p.locality != null && p.locality!.isNotEmpty) {
-            loc = "${p.locality!}, ${p.country!}";
-          } else if (p.subAdministrativeArea != null &&
-              p.subAdministrativeArea!.isNotEmpty) {
-            loc = "${p.subAdministrativeArea!}, ${p.country!}";
+        if (placemark.country != null) {
+          if (placemark.locality != null && placemark.locality!.isNotEmpty) {
+            loc = "${placemark.locality!}, ${placemark.country!}";
+          } else if (placemark.subAdministrativeArea != null &&
+              placemark.subAdministrativeArea!.isNotEmpty) {
+            loc = "${placemark.subAdministrativeArea!}, ${placemark.country!}";
           }
         }
-        setState(() {
-          mDetails[1] = (mDetails[1].$1, loc);
-        });
+        if (loc != "" && loc != widget.details.location) {
+          setState(() {
+            widget.details.location = loc;
+          });
+          uploadDataToDB();
+        }
       }
+    }
+  }
+
+  Future<void> uploadDataToDB() async {
+    try {
+      FirebaseFirestore.instance.collection("data").doc(widget.details.uid).set({
+        "name": widget.details.displayName,
+        "photo": widget.details.photoURL,
+        "location": widget.details.location,
+        "time": FieldValue.serverTimestamp()
+      });
+    } catch (e) {
+      print(e); // Add snackbar
     }
   }
 
@@ -145,8 +154,8 @@ class HomePageState extends State<HomePage> {
       drawer: Drawer(
           child: ListView(children: <Widget>[
         UserAccountsDrawerHeader(
-            accountName: Text(mDetails[0].$2),
-            accountEmail: Text(mDetails[1].$2),
+            accountName: Text(widget.details.displayName),
+            accountEmail: Text(widget.details.location),
             currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.black26, child: Text(":)")),
             decoration:
@@ -159,9 +168,7 @@ class HomePageState extends State<HomePage> {
         ListTile(
             title: const Text("Details"),
             trailing: const Icon(Icons.list_alt),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (BuildContext context) =>
-                    DetailsPage(mDetails, setMainState)))),
+            onTap: () {}),
         ListTile(
             title: const Text("Log Out"),
             trailing: const Icon(Icons.exit_to_app),
