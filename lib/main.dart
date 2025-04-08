@@ -156,7 +156,8 @@ class HomePageState extends State<HomePage> {
             accountName: Text(widget.details.displayName),
             accountEmail: Text(widget.details.location),
             currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.black26, child: Text(":)")
+              backgroundColor: Colors.black26,
+              child: Text(":)"),
             ),
             decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
           ),
@@ -198,55 +199,57 @@ class HomePageState extends State<HomePage> {
             ))
           ),
         ),
-        Expanded(
-          child: StreamBuilder(
-            stream: FirebaseFirestore.instance
-              .collection("network")
-              .doc(FirebaseAuth.instance.currentUser!.uid)
-              .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting
-                  || !snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-              return ListView.builder(
-                itemCount: snapshot.data!["friends"].length,
-                itemBuilder: (context, index) {
-                  return StreamBuilder(
-                    stream: FirebaseFirestore.instance
-                      .collection("data")
-                      .doc(snapshot.data!["friends"][index])
-                      .snapshots(),
-                    builder: (context, friendSnapshot) {
-                      if (friendSnapshot.connectionState == ConnectionState.waiting
-                          || !friendSnapshot.hasData
-                          || !friendSnapshot.data!.exists
-                          || friendSnapshot.data!["location"] != widget.details.location
-                      ) {
-                        return Container();
-                      }
-                      return Container( 
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: Colors.grey, width: 2.0),
+        StreamBuilder(
+          stream: FirebaseFirestore.instance
+            .collection("network")
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (!snapshot.hasData || snapshot.data!["friends"].isEmpty) {
+              return const Center(child: Text("Time to make some friends"));
+            }
+            return StreamBuilder(
+              stream: FirebaseFirestore.instance
+                .collection("data")
+                .where(FieldPath.documentId, whereIn: snapshot.data!["friends"])
+                .where("location", isEqualTo: widget.details.location)
+                .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                return Expanded(
+                  child: !snapshot.hasData || snapshot.data!.docs.isEmpty
+                    ? const Center(child: Text("No-one is around :("))
+                    : ListView.builder(
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        return Container( 
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey, width: 2.0),
+                            )
+                          ),
+                          child: FriendCard(
+                            name: snapshot.data!.docs[index].data()["name"],
+                            location: snapshot.data!.docs[index].data()["location"],
+                            photo: snapshot.data!.docs[index].data()["photo"],
                           )
-                        ),
-                        child: FriendCard(
-                          name: friendSnapshot.data!["name"],
-                          location: friendSnapshot.data!["location"],
-                          photo: friendSnapshot.data!["photo"],
-                        )
                       );
                     }
-                  );
-                },
-              );
-            },
-          )
+                  )
+                );
+              }
+            );
+          }
         )
-      ]
-    ));
+      ])
+    );
   }
 }
