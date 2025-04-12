@@ -22,94 +22,99 @@ class RequestPage extends StatelessWidget {
             .doc(FirebaseAuth.instance.currentUser!.uid)
             .snapshots(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting
-                || !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
+            } else if (!snapshot.hasData || snapshot.data!["requests"].isEmpty) {
+              return Container();
             }
-            return ListView.builder(
-              itemCount: snapshot.data!["requests"].length,
-              itemBuilder: (context, index) {
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                    .collection("data")
-                    .doc(snapshot.data!["requests"][index])
-                    .snapshots(),
-                  builder: (context, requestSnapshot) {
-                    if (requestSnapshot.connectionState == ConnectionState.waiting
-                        || !requestSnapshot.hasData
-                        || !requestSnapshot.data!.exists
-                    ) {
-                      return Container();
+            return StreamBuilder(
+              stream: FirebaseFirestore.instance
+                .collection("data")
+                .where(FieldPath.documentId, whereIn: snapshot.data!["requests"])
+                .snapshots(),
+              builder: (context, reqSnapshot) {
+                if (reqSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                if (!reqSnapshot.hasData) {
+                  Container();
+                }
+                return Expanded(
+                  child: ListView.builder(
+                    itemCount: reqSnapshot.data!.docs.length,
+                    itemBuilder: (context, index) {
+                      return Container( 
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey, width: 2.0),
+                          )
+                        ),
+                        child: Row(children: <Widget>[
+                          Expanded(child: FriendCard(
+                            name: reqSnapshot.data!.docs[index].data()["name"],
+                            location: reqSnapshot.data!.docs[index].data()["location"],
+                            photo: reqSnapshot.data!.docs[index].data()["photo"],
+                          )),
+                          IconButton(
+                            icon: const Icon(Icons.check),
+                            tooltip: "Confirm",
+                            onPressed: () async {
+                              FirebaseFirestore.instance
+                                .collection("network")
+                                .doc(FirebaseAuth.instance.currentUser!.uid)
+                                .set({
+                                  "requests": FieldValue.arrayRemove([
+                                    snapshot.data!["requests"][index]
+                                  ])},
+                                  SetOptions(merge: true),
+                                );
+                              FirebaseFirestore.instance
+                                .collection("network")
+                                .doc(FirebaseAuth.instance.currentUser!.uid)
+                                .set({
+                                  "friends": FieldValue.arrayUnion([
+                                    snapshot.data!["requests"][index]
+                                  ])},
+                                  SetOptions(merge: true),
+                                );
+                              FirebaseFirestore.instance
+                                .collection("network")
+                                .doc(snapshot.data!["requests"][index])
+                                .set({
+                                  "friends": FieldValue.arrayUnion([
+                                    FirebaseAuth.instance.currentUser!.uid
+                                  ])},
+                                  SetOptions(merge: true),
+                                );
+                            }
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: "Ignore",
+                            onPressed: () async {
+                              FirebaseFirestore.instance
+                                .collection("network")
+                                .doc(FirebaseAuth.instance.currentUser!.uid)
+                                .update({
+                                  "requests": FieldValue.arrayRemove([
+                                    snapshot.data!["requests"][index]
+                                  ])
+                                });
+                            },
+                          ),
+                        ])
+                      );
                     }
-                    return Container( 
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey, width: 2.0),
-                        )
-                      ),
-                      child: Row(children: [
-                        Expanded(child: FriendCard(
-                          name: requestSnapshot.data!["name"],
-                          location: requestSnapshot.data!["location"],
-                          photo: requestSnapshot.data!["photo"],
-                        )),
-                        IconButton(
-                          icon: const Icon(Icons.check),
-                          tooltip: "Confirm",
-                          onPressed: () async {
-                            FirebaseFirestore.instance
-                              .collection("network")
-                              .doc(FirebaseAuth.instance.currentUser!.uid)
-                              .set({
-                                "requests": FieldValue.arrayRemove([
-                                  snapshot.data!["requests"][index]
-                                ])},
-                                SetOptions(merge: true),
-                              );
-                            FirebaseFirestore.instance
-                              .collection("network")
-                              .doc(FirebaseAuth.instance.currentUser!.uid)
-                              .set({
-                                "friends": FieldValue.arrayUnion([
-                                  snapshot.data!["requests"][index]
-                                ])},
-                                SetOptions(merge: true),
-                              );
-                            FirebaseFirestore.instance
-                              .collection("network")
-                              .doc(snapshot.data!["requests"][index])
-                              .set({
-                                "friends": FieldValue.arrayUnion([
-                                  FirebaseAuth.instance.currentUser!.uid
-                                ])},
-                                SetOptions(merge: true),
-                              );
-                          }
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: "Ignore",
-                          onPressed: () async {
-                            FirebaseFirestore.instance
-                              .collection("network")
-                              .doc(FirebaseAuth.instance.currentUser!.uid)
-                              .update({
-                                "requests": FieldValue.arrayRemove([
-                                  snapshot.data!["requests"][index]
-                                ])
-                              });
-                          },
-                        ),
-                      ])
-                    );
-                  }
+                  )
                 );
-              },
+              }
             );
-          },
-        )
+          }
+        ),
       )
     );
   }

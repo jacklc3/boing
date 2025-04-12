@@ -2,11 +2,29 @@ import 'dart:io';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+enum UserStatus { exists, friends, requested, bad, self }
+
+String toMessage(UserStatus status) {
+  switch (status) {
+    case UserStatus.exists:
+      return "User addded";
+    case UserStatus.friends:
+      return "User already friends";
+    case UserStatus.requested:
+      return "User already requested";
+    case UserStatus.bad:
+      return "User not found";
+    case UserStatus.self:
+      return "Cannot add yourself";
+  }
+}
 
 class QrScannerPage extends StatefulWidget {
   const QrScannerPage({super.key});
@@ -18,8 +36,8 @@ class QrScannerPage extends StatefulWidget {
 class QrScannerPageState extends State<QrScannerPage> {
   bool scanning = false;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  Barcode? result;
   QRViewController? controller;
+  final TextEditingController textController = TextEditingController();
 
   // In order to get hot reload to work we need to pause the camera if the platform
   // is android, or resume the camera if the platform is iOS.
@@ -69,12 +87,87 @@ class QrScannerPageState extends State<QrScannerPage> {
             ],
           )
         ),
-        Expanded(child: !scanning
-          ? Center(child: QrImageView(
-            data: FirebaseAuth.instance.currentUser?.uid ?? "",
-            version: QrVersions.auto,
-            size: 200.0))
-          : Column(children: <Widget>[
+        Expanded(
+          child: !scanning ? Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              QrImageView(
+                data: FirebaseAuth.instance.currentUser!.uid,
+                version: QrVersions.auto,
+                size: 200.0
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                "Manually copy user ID:",
+                 style: TextStyle(fontWeight: FontWeight.bold)
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(FirebaseAuth.instance.currentUser!.uid),
+                  IconButton(
+                    icon: const Icon(Icons.copy),
+                    tooltip: "Copy to clipboard",
+                    onPressed: () async {
+                      try {
+                        await Clipboard.setData(
+                          ClipboardData(text: FirebaseAuth.instance.currentUser!.uid)
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Copied to clipboard")));
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Failed to copy to clipboard")));
+                        }
+                      }
+                    },
+                  ),
+                ]
+              ),
+              const Text(
+                "Manually add user:",
+                 style: TextStyle(fontWeight: FontWeight.bold)
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 250),
+                    child: Expanded(
+                      child: TextField(
+                        controller: textController,
+                        decoration: InputDecoration(
+                          hintText: "Enter user ID",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(5.0)
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 10
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    tooltip: "Send request",
+                    onPressed: () async {
+                      sendRequest(textController.text, context);
+                      textController.clear();
+                    },
+                  ),
+                ]
+              )
+            ]
+          ) : Column(children: <Widget>[
             Expanded(flex: 4, child: buildQrView(context)),
             Expanded(
               flex: 1,
@@ -138,7 +231,7 @@ class QrScannerPageState extends State<QrScannerPage> {
     // we need to listen for Flutter SizeChanged notification and update controller
     return QRView(
       key: qrKey,
-      onQRViewCreated: onQRViewCreated,
+      onQRViewCreated: (controller) => onQRViewCreated(controller, context),
       overlay: QrScannerOverlayShape(
         borderColor: Colors.red,
         borderRadius: 10,
@@ -149,21 +242,50 @@ class QrScannerPageState extends State<QrScannerPage> {
     );
   }
 
-  void onQRViewCreated(QRViewController controller) {
+  void onQRViewCreated(QRViewController controller, BuildContext context) {
     setState(() { this.controller = controller; });
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code != null) {
         setState(() { scanning = false; });
-        FirebaseFirestore.instance.collection("network")
-          .doc(scanData.code!)
-          .set({
-            "requests": FieldValue.arrayUnion([
-              FirebaseAuth.instance.currentUser!.uid
-            ])},
-            SetOptions(merge: true),
-          );
+        sendRequest(scanData.code!, context);
       }
     });
+  }
+
+  void sendRequest(String uid, BuildContext context) async {
+    UserStatus status;
+
+    if (uid == FirebaseAuth.instance.currentUser!.uid) {
+      status = UserStatus.self;
+    } else {
+      status = await FirebaseFirestore.instance.collection("network")
+        .doc(uid).get().then((value) {
+          if (!value.exists) {
+            return UserStatus.bad;
+          } else if (value["friends"].contains(FirebaseAuth.instance.currentUser!.uid)) {
+            return UserStatus.friends;
+          } else if (value["requests"].contains(FirebaseAuth.instance.currentUser!.uid)) {
+            return UserStatus.requested;
+          } else {
+            return UserStatus.exists;
+          }
+        });
+    }
+
+    if (status == UserStatus.exists) {
+      FirebaseFirestore.instance.collection("network").doc(uid).update({
+        "requests": FieldValue.arrayUnion([
+          FirebaseAuth.instance.currentUser!.uid
+        ])
+      });
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(toMessage(status)),
+        duration: const Duration(seconds: 2),
+      ));
+    }
   }
 
   void onPermissionSet(BuildContext context, QRViewController ctrl, bool perms) {
