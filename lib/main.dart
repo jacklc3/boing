@@ -12,6 +12,7 @@ import 'friends_page.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
 import 'network_display.dart';
+import 'details.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,45 +28,27 @@ class Application extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Boing',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        home: StreamBuilder(
-            stream: FirebaseAuth.instance.idTokenChanges(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.data != null) {
-                return HomePage(Details(
-                    snapshot.data?.uid ?? "",
-                    snapshot.data?.displayName ?? "",
-                    snapshot.data?.email ?? "",
-                    snapshot.data?.phoneNumber ?? "",
-                    snapshot.data?.photoURL ?? ""));
-              }
-              return const LoginPage();
-            }));
+      title: 'Boing',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: StreamBuilder(
+        stream: FirebaseAuth.instance.idTokenChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.data != null) {
+            return const HomePage();
+          }
+          return const LoginPage();
+        }));
   }
 }
 
-class Details {
-  Details(
-      this.uid, this.displayName, this.email, this.phoneNumber, this.photoURL);
-  final String uid;
-  final String displayName;
-  final String email;
-  final String phoneNumber;
-  final String photoURL;
-  String location = "";
-}
-
 class HomePage extends StatefulWidget {
-  final Details details;
-
-  const HomePage(this.details, {super.key});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => HomePageState();
@@ -74,6 +57,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   final Location mLocation = Location();
   StreamSubscription<LocationData>? mLocationSub;
+  String location = "";
 
   @override
   void initState() {
@@ -101,15 +85,13 @@ class HomePageState extends State<HomePage> {
       }
     }
 
-    mLocationSub = mLocation.onLocationChanged.listen((LocationData location) {
-      getLocation(location);
-    });
+    mLocationSub = mLocation.onLocationChanged.listen(getLocation);
   }
 
-  Future<void> getLocation(LocationData location) async {
-    if (location.latitude != null && location.longitude != null) {
+  Future<void> getLocation(LocationData locationData) async {
+    if (locationData.latitude != null && locationData.longitude != null) {
       List<geocoding.Placemark> placemarks = await geocoding
-          .placemarkFromCoordinates(location.latitude!, location.longitude!);
+          .placemarkFromCoordinates(locationData.latitude!, locationData.longitude!);
       if (placemarks.isNotEmpty) {
         geocoding.Placemark placemark = placemarks.first;
         String loc = "";
@@ -121,9 +103,9 @@ class HomePageState extends State<HomePage> {
             loc = "${placemark.subAdministrativeArea!}, ${placemark.country!}";
           }
         }
-        if (loc != "" && loc != widget.details.location) {
+        if (loc != "" && loc != location) {
           setState(() {
-            widget.details.location = loc;
+            location = loc;
           });
           uploadDataToDB();
         }
@@ -133,9 +115,10 @@ class HomePageState extends State<HomePage> {
 
   Future<void> uploadDataToDB() async {
     try {
-      FirebaseFirestore.instance.collection("data").doc(widget.details.uid)
+      FirebaseFirestore.instance.collection("data")
+        .doc(FirebaseAuth.instance.currentUser!.uid)
         .set({
-          "location": widget.details.location,
+          "location": location,
           "time": FieldValue.serverTimestamp()
         },
         SetOptions(merge: true),
@@ -154,14 +137,28 @@ class HomePageState extends State<HomePage> {
       ),
       drawer: Drawer(
         child: ListView(children: <Widget>[
-          UserAccountsDrawerHeader(
-            accountName: Text(widget.details.displayName),
-            accountEmail: Text(widget.details.location),
-            currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.black26,
-              child: Text(":)"),
-            ),
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
+          StreamBuilder(
+            stream: FirebaseFirestore.instance.collection("data")
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .snapshots(),
+            builder: (context, snapshot) {
+              String name = "";
+              if (snapshot.connectionState != ConnectionState.waiting
+                  && snapshot.hasData) {
+                if (snapshot.data!.data()?.containsKey("name") ?? false) {
+                  name = snapshot.data!["name"];
+                }
+              }
+              return UserAccountsDrawerHeader(
+                accountName: Text(name),
+                accountEmail: Text(location),
+                currentAccountPicture: const CircleAvatar(
+                  backgroundColor: Colors.black26,
+                  child: Text(":)"),
+                ),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
+              );
+            }
           ),
           ListTile(
             title: const Text("Friends"),
@@ -173,7 +170,9 @@ class HomePageState extends State<HomePage> {
           ListTile(
             title: const Text("Details"),
             trailing: const Icon(Icons.list_alt),
-            onTap: () {}
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (BuildContext context) => const DetailsPage()
+            ))
           ),
           ListTile(
             title: const Text("Log Out"),
@@ -206,7 +205,7 @@ class HomePageState extends State<HomePage> {
             group: "friends",
             noDataWidget: const Center(child: Text("Time to make some friends")),
             queryUpdate: (query) =>
-              query.where("location", isEqualTo: widget.details.location),
+              query.where("location", isEqualTo: location),
           )
         ),
       ])

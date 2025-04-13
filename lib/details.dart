@@ -1,60 +1,77 @@
 import 'package:flutter/material.dart';
 
-class DetailsPage extends StatefulWidget {
-    final List<(String, String)> details;
-    final Function setMainState;
-    const DetailsPage(this.details, this.setMainState, {super.key});
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-    @override
-    State<DetailsPage> createState() => DetailsPageState();
+class DetailsPage extends StatefulWidget {
+  const DetailsPage({super.key});
+
+  @override
+  State<DetailsPage> createState() => DetailsPageState();
 }
 
 class DetailsPageState extends State<DetailsPage> {
-    String ftext = "";
+  static const fields = <String>["name", "home", "status"];
+  String ftext = "";
 
-    void dialog(int i) {
-        showDialog(
-            context: context,
-            builder: (BuildContext context) => AlertDialog(
-                title: Text(widget.details[i].$1),
-                content: TextField(
-                    onChanged: (String s) { ftext = s; }
-                ),
-                actions: <Widget>[
-                    IconButton(
-                        icon: const Icon(Icons.done),
-                        onPressed: (){
-                            setState((){ widget.details[i] = (widget.details[i].$1, ftext); });
-                            widget.setMainState();
-                            Navigator.pop(context);
-                        }
-                    ),
-                    IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: (){ Navigator.pop(context); }
-                    ),
-                ]
-            )
-        );
-    }
+  void dialog(field) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(field),
+        content: TextField(
+          onChanged: (String s) { ftext = s; }
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.done),
+            onPressed: () async {
+              FirebaseFirestore.instance
+                .collection("data")
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .update({field: ftext.trim()});
+              Navigator.pop(context);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () { Navigator.pop(context); },
+          ),
+        ]
+      )
+    );
+  }
 
-    @override
-    Widget build(BuildContext context) {
-        return Scaffold(
-            appBar: AppBar(
-                backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-                title: const Text("Details")
-            ),
-            body: ListView.builder(
-                itemCount: widget.details.length,
-                itemBuilder: (BuildContext context, int i) {
-                    return ListTile(
-                        title: Text(widget.details[i].$1),
-                        subtitle: Text(widget.details[i].$2),
-                        onTap: (){ dialog(i); }
-                    );
-                }
-            )
-        );
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Details")
+      ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection("data")
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (!snapshot.hasData) {
+            return Container();
+          }
+          return ListView.builder(
+            itemCount: fields.length,
+            itemBuilder: (context, i) => ListTile(
+                title: Text(fields[i]),
+                subtitle: Text(snapshot.data!.data()?.containsKey(fields[i]) ?? false
+                  ? snapshot.data![fields[i]] : ""),
+                onTap: (){ dialog(fields[i]); }
+              ),
+          );
+        }
+      )
+    );
+  }
 }
