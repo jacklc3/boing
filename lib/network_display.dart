@@ -12,8 +12,8 @@ Query<Map<String, dynamic>> idUpdate(Query<Map<String, dynamic>> query) {
 class NetworkDisplay extends StatelessWidget {
   final String group;
   final Widget noDataWidget;
-  final Function? tickBuilder;
-  final Function? crossBuilder;
+  final Widget Function(AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>, int)? tickBuilder;
+  final Widget Function(AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>, int)? crossBuilder;
   final Function? tapCallback;
   final Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>>) queryUpdate;
 
@@ -72,9 +72,9 @@ class NetworkDisplay extends StatelessWidget {
                       photo: reqSnapshot.data!.docs[index].data()["photo"],
                     )),
                     tickBuilder == null ? Container()
-                      : tickBuilder!(snapshot, reqSnapshot, index),
+                      : tickBuilder!(snapshot, index),
                     crossBuilder == null ? Container()
-                      : crossBuilder!(snapshot, reqSnapshot, index),
+                      : crossBuilder!(snapshot, index),
                   ])
                 );
               }

@@ -18,7 +18,7 @@ class RequestPage extends StatelessWidget {
       body: NetworkDisplay(
         group: "requests",
         noDataWidget: const Center(child: Text("No new requests")),
-        tickBuilder: (snapshot, reqSnapshot, index) =>
+        tickBuilder: (snapshot, index) =>
           IconButton(
             icon: const Icon(Icons.check),
             tooltip: "Confirm",
@@ -52,7 +52,7 @@ class RequestPage extends StatelessWidget {
                 );
             }
           ),
-        crossBuilder: (snapshot, reqSnapshot, index) =>
+        crossBuilder: (snapshot, index) =>
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: "Ignore",
