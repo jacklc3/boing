@@ -1,3 +1,4 @@
+import 'package:boing/network_display.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -33,53 +34,10 @@ class FriendsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: StreamBuilder(
-          stream: FirebaseFirestore.instance
-            .collection("network")
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting
-                || !snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-            return ListView.builder(
-              itemCount: snapshot.data!["friends"].length,
-              itemBuilder: (context, index) {
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                    .collection("data")
-                    .doc(snapshot.data!["friends"][index])
-                    .snapshots(),
-                  builder: (context, friendSnapshot) {
-                    if (friendSnapshot.connectionState == ConnectionState.waiting
-                        || !friendSnapshot.hasData
-                        || !friendSnapshot.data!.exists
-                    ) {
-                      return Container();
-                    }
-                    return Container( 
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey, width: 2.0),
-                        )
-                      ),
-                      child: FriendCard(
-                        name: friendSnapshot.data!["name"],
-                        location: friendSnapshot.data!["location"],
-                        photo: friendSnapshot.data!["photo"],
-                      )
-                    );
-                  }
-                );
-              },
-            );
-          },
+      body: const NetworkDisplay(
+          group: "friends",
+          noDataWidget: Center(child: Text("Time to make some friends!"))
         )
-      )
     );
   }
 }

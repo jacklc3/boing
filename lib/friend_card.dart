@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 class FriendCard extends StatelessWidget {
   static const String defaultPhoto = 
     "https://www.clipartmax.com/png/middle/214-2143742_individuals-whatsapp-profile-picture-icon.png";
-  final String name;
-  final String location;
-  final String photo;
+
+  final String? name;
+  final String? home;
+  final String? photo;
+
   const FriendCard({
     super.key,
     required this.name,
-    required this.location,
+    required this.home,
     required this.photo,
   });
 
@@ -22,7 +24,7 @@ class FriendCard extends StatelessWidget {
           width: 75,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(photo != "" ? photo : defaultPhoto),
+              image: NetworkImage(photo ?? defaultPhoto),
               fit: BoxFit.cover,
             ),
             shape: BoxShape.circle,
@@ -40,7 +42,7 @@ class FriendCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    name ?? "",
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -49,7 +51,7 @@ class FriendCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(right: 20, bottom: 25),
                     child: Text(
-                      location,
+                      home ?? "",
                       style: const TextStyle(fontSize: 14),
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,

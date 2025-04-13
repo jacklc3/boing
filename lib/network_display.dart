@@ -5,22 +5,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'friend_card.dart';
 
-class FriendDisplay extends StatelessWidget {
-  final String networkList;
+class NetworkDisplay extends StatelessWidget {
+  final String group;
   final Widget noDataWidget;
-  final Widget cardWidget;
-  const FriendDisplay({
+  final Function? tickBuilder;
+  final Function? crossBuilder;
+  final Function? tapCallback;
+
+  const NetworkDisplay({
     super.key,
-    required this.networkList,
+    required this.group,
     required this.noDataWidget,
-    required this.cardWidget,
+    this.tickBuilder,
+    this.crossBuilder,
+    this.tapCallback,
   });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: FirebaseFirestore.instance
-        .collection(networkList)
+        .collection("network")
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .snapshots(),
       builder: (context, snapshot) {
@@ -28,13 +33,13 @@ class FriendDisplay extends StatelessWidget {
           return const Center(
             child: CircularProgressIndicator(),
           );
-        } else if (!snapshot.hasData || snapshot.data![networkList].isEmpty) {
-          return Container();
+        } else if (!snapshot.hasData || snapshot.data![group].isEmpty) {
+          return noDataWidget;
         }
         return StreamBuilder(
           stream: FirebaseFirestore.instance
             .collection("data")
-            .where(FieldPath.documentId, whereIn: snapshot.data![networkList])
+            .where(FieldPath.documentId, whereIn: snapshot.data![group])
             .snapshots(),
           builder: (context, reqSnapshot) {
             if (reqSnapshot.connectionState == ConnectionState.waiting) {
@@ -42,23 +47,31 @@ class FriendDisplay extends StatelessWidget {
                 child: CircularProgressIndicator(),
               );
             }
-            if (!snapshot.hasData || snapshot.data![networkList].isEmpty) {
+            if (!reqSnapshot.hasData || reqSnapshot.data!.docs.isEmpty) {
               return noDataWidget;
             }
-            return Expanded(
-              child: ListView.builder(
-                itemCount: reqSnapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-                  return Container( 
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 2.0),
-                      )
-                    ),
-                    child: cardWidget(snapshot, reqSnapshot)
-                  );
-                }
-              )
+            return ListView.builder(
+              itemCount: reqSnapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                return Container( 
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey, width: 2.0),
+                    )
+                  ),
+                  child: Row(children: <Widget>[
+                    Expanded(child: FriendCard(
+                      name: reqSnapshot.data!.docs[index].data()["name"],
+                      home: reqSnapshot.data!.docs[index].data()["home"],
+                      photo: reqSnapshot.data!.docs[index].data()["photo"],
+                    )),
+                    tickBuilder == null ? Container()
+                      : tickBuilder!(snapshot, reqSnapshot, index),
+                    crossBuilder == null ? Container()
+                      : crossBuilder!(snapshot, reqSnapshot, index),
+                  ])
+                );
+              }
             );
           }
         );
