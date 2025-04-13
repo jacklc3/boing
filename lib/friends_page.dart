@@ -1,11 +1,7 @@
 import 'package:boing/network_display.dart';
 import 'package:flutter/material.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import 'qr_scanner_page.dart';
-import 'friend_card.dart';
 import 'request_page.dart';
 
 class FriendsPage extends StatelessWidget {

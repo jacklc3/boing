@@ -5,12 +5,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'friend_card.dart';
 
+Query<Map<String, dynamic>> idUpdate(Query<Map<String, dynamic>> query) {
+  return query;
+}
+
 class NetworkDisplay extends StatelessWidget {
   final String group;
   final Widget noDataWidget;
   final Function? tickBuilder;
   final Function? crossBuilder;
   final Function? tapCallback;
+  final Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>>) queryUpdate;
 
   const NetworkDisplay({
     super.key,
@@ -19,6 +24,7 @@ class NetworkDisplay extends StatelessWidget {
     this.tickBuilder,
     this.crossBuilder,
     this.tapCallback,
+    this.queryUpdate = idUpdate,
   });
 
   @override
@@ -37,9 +43,9 @@ class NetworkDisplay extends StatelessWidget {
           return noDataWidget;
         }
         return StreamBuilder(
-          stream: FirebaseFirestore.instance
+          stream: queryUpdate(FirebaseFirestore.instance
             .collection("data")
-            .where(FieldPath.documentId, whereIn: snapshot.data![group])
+            .where(FieldPath.documentId, whereIn: snapshot.data![group]))
             .snapshots(),
           builder: (context, reqSnapshot) {
             if (reqSnapshot.connectionState == ConnectionState.waiting) {

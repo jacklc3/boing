@@ -7,7 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
 import 'friends_page.dart';
-import 'friend_card.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
 import 'network_display.dart';
@@ -200,10 +199,12 @@ class HomePageState extends State<HomePage> {
             ))
           ),
         ),
-        const Expanded(
+        Expanded(
           child: NetworkDisplay(
             group: "friends",
-            noDataWidget: Center(child: Text("Time to make some friends"))
+            noDataWidget: const Center(child: Text("Time to make some friends")),
+            queryUpdate: (query) =>
+              query.where("location", isEqualTo: widget.details.location),
           )
         ),
       ])
