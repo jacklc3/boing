@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
 
 import 'friends_page.dart';
 import 'firebase_options.dart';
@@ -139,7 +141,7 @@ class HomePageState extends State<HomePage> {
         SetOptions(merge: true),
       );
     } catch (e) {
-      print(e); // Add snackbar
+      log(e.toString()); // Add snackbar
     }
   }
 
