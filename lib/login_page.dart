@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'authentication/authentication_layout.dart';
+import 'authentication_layout.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,6 +18,7 @@ class LoginPage extends StatefulWidget {
 class LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool busy = false;
 
   @override
   void dispose() {
@@ -47,18 +48,21 @@ class LoginPageState extends State<LoginPage> {
               TextField(
                 decoration: const InputDecoration(labelText: 'Password'),
                 controller: passwordController,
+                obscureText: true,
               ),
             ],
           ),
           onForgotPassword: () {},
           onSignInWithGoogle: useGoogleAuthentication,
           // onSignInWithApple: useAppleAuthentication,
+          busy: busy,
         )
       )
     );
   }
 
   Future<void> useEmailPasswordAuthentication() async {
+    setState(() { busy = true; });
     try {
       final userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
@@ -66,26 +70,25 @@ class LoginPageState extends State<LoginPage> {
               password: passwordController.text.trim());
       print(userCredential);
     } on FirebaseAuthException catch (e) {
-      print("exception->$e");
+      print(e);
+      setState(() { busy = false; });
     }
   }
 
   Future<void> useGoogleAuthentication() async {
+    setState(() { busy = true; });
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      final GoogleSignInAuthentication? googleAuth =
-          await googleUser?.authentication;
-
+      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
-
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       print(userCredential);
     } on Exception catch (e) {
-      // TODO
+      print(e);
+      setState(() { busy = false; });
     }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'authentication_layout.dart';
+
 class SignUpPage extends StatefulWidget {
   static route() => MaterialPageRoute(
         builder: (context) => const SignUpPage(),
@@ -8,33 +10,33 @@ class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  State<SignUpPage> createState() => _SignUpPageState();
+  State<SignUpPage> createState() => SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
-  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
+class SignUpPageState extends State<SignUpPage> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final formKey = GlobalKey<FormState>();
+  bool busy = false;
 
   @override
   void dispose() {
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> createUserWithEmailAndPassword() async {
+  Future<void> createUser() async {
+    setState(() { busy = true; });
     try {
-      final userCredential = FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-              email: emailController.text.trim(),
-              password: passwordController.text.trim());
-      print(userCredential);
+      FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim()
+        ).then((uc) => uc.user?.updateDisplayName(nameController.text));
     } on FirebaseAuthException catch (e) {
-      scaffoldKey.currentState?.showSnackBar(
-        SnackBar(content: Text(e.message ?? "Failed to create an account"))
-      );
+      print(e.message ?? "Failed to create an account");
+      setState(() { busy = false; });
     }
   }
 
@@ -43,71 +45,32 @@ class _SignUpPageState extends State<SignUpPage> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(15.0),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: AuthenticationLayout(
+          onMainButtonTapped: createUser,
+          onBackPressed: () { Navigator.pop(context); },
+          title: 'Create Account',
+          subtitle: 'Enter your name, email and password for sign up.',
+          mainButtonTitle: 'SIGN UP',
+          form: Column(
             children: [
-              const Text(
-                'Sign Up.',
-                style: TextStyle(
-                  fontSize: 50,
-                  fontWeight: FontWeight.bold,
-                ),
+              TextField(
+                decoration: const InputDecoration(labelText: 'Name'),
+                controller: nameController,
               ),
-              const SizedBox(height: 10),
-              const SizedBox(height: 20),
-              TextFormField(
+              TextField(
+                decoration: const InputDecoration(labelText: 'Email'),
                 controller: emailController,
-                decoration: const InputDecoration(
-                  hintText: 'Email',
-                ),
               ),
-              const SizedBox(height: 15),
-              TextFormField(
+              TextField(
+                decoration: const InputDecoration(labelText: 'Password'),
                 controller: passwordController,
-                decoration: const InputDecoration(
-                  hintText: 'Password',
-                ),
                 obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await createUserWithEmailAndPassword();
-                },
-                child: const Text(
-                  'SIGN UP',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Already have an account? ',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    children: [
-                      TextSpan(
-                        text: 'Sign In',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
-        ),
+          showTermsText: true,
+          busy: busy,
+        )
       ),
     );
   }

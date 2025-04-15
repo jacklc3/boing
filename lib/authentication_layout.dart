@@ -1,19 +1,18 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:auth_buttons/auth_buttons.dart';
 
 import 'constants.dart';
 
 class AuthenticationLayout extends StatelessWidget {
-  final String? title;
-  final String? subtitle;
-  final String? mainButtonTitle;
-  final Widget? form;
+  final String title;
+  final String subtitle;
+  final String mainButtonTitle;
+  final Widget form;
   final bool showTermsText;
   final void Function()? onMainButtonTapped;
   final void Function()? onCreateAccountTapped;
   final void Function()? onForgotPassword;
+  final void Function()? onBackPressed;
   final void Function()? onSignInWithApple;
   final void Function()? onSignInWithGoogle;
   final String? validationMessage;
@@ -21,13 +20,14 @@ class AuthenticationLayout extends StatelessWidget {
 
   const AuthenticationLayout({
     Key? key,
-    this.title,
-    this.subtitle,
-    this.mainButtonTitle,
-    this.form,
+    required this.title,
+    required this.subtitle,
+    required this.mainButtonTitle,
+    required this.form,
     this.onMainButtonTapped,
     this.onCreateAccountTapped,
     this.onForgotPassword,
+    this.onBackPressed,
     this.onSignInWithApple,
     this.onSignInWithGoogle,
     this.validationMessage,
@@ -41,9 +41,20 @@ class AuthenticationLayout extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 15),
       child: ListView(
         children: [
-          verticalSpaceLarge,
+          if (onBackPressed == null) verticalSpaceLarge,
+          if (onBackPressed != null) verticalSpaceRegular,
+          if (onBackPressed != null)
+            IconButton(
+              padding: EdgeInsets.zero,
+              alignment: Alignment.centerLeft,
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                color: Colors.black,
+              ),
+              onPressed: onBackPressed,
+            ),
           Text(
-            title!,
+            title,
             style: const TextStyle(fontSize: 34),
           ),
           verticalSpaceSmall,
@@ -52,14 +63,14 @@ class AuthenticationLayout extends StatelessWidget {
             child: SizedBox(
               width: screenWidthPercentage(context, percentage: 0.7),
               child: Text(
-                subtitle!,
+                subtitle,
                 style: bodyStyle.copyWith(color: Colors.grey.shade400),
                 textAlign: TextAlign.start,
               ),
             ),
           ),
           verticalSpaceRegular,
-          form!,
+          form,
           verticalSpaceRegular,
           if (onForgotPassword != null)
             Align(
@@ -95,7 +106,7 @@ class AuthenticationLayout extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation(Colors.white),
                     )
                   : Text(
-                      mainButtonTitle!,
+                      mainButtonTitle,
                       style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -143,28 +154,27 @@ class AuthenticationLayout extends StatelessWidget {
             )
           ),
           verticalSpaceRegular,
-          if (Platform.isIOS)
-            AppleAuthButton(
-              onPressed: onSignInWithApple ?? () {},
-              // darkMode: true,
-              text: 'CONTINUE WITH APPLE',
-              style: const AuthButtonStyle(
-                iconSize: 24,
-                height: 50,
-                textStyle: TextStyle(color: Colors.white),
-                buttonType: AuthButtonType.secondary,
-              ),
+          AppleAuthButton(
+            onPressed: onSignInWithApple ?? () {},
+            // darkMode: true,
+            text: 'CONTINUE WITH APPLE',
+            style: const AuthButtonStyle(
+              buttonType: AuthButtonType.secondary,
+              height: 50,
+              separator: 30,
+              textStyle: TextStyle(color: Colors.white),
             ),
-          if (Platform.isIOS) verticalSpaceRegular,
+          ),
+          verticalSpaceRegular,
           GoogleAuthButton(
             onPressed: onSignInWithGoogle ?? () {},
             text: 'CONTINUE WITH GOOGLE',
             style: const AuthButtonStyle(
               buttonColor: Color(0xff4285F4),
-              iconSize: 24,
-              iconBackground: Colors.white,
               buttonType: AuthButtonType.secondary,
               height: 50,
+              separator: 20,
+              iconBackground: Colors.white,
               textStyle: TextStyle(color: Colors.white),
             ),
           )
