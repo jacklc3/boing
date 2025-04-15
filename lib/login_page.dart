@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import 'authentication/authentication_layout.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -10,15 +12,12 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LoginPage> createState() => LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
-
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final formKey = GlobalKey<FormState>();
+class LoginPageState extends State<LoginPage> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -27,7 +26,39 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> loginUserWithEmailAndPassword() async {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: AuthenticationLayout(
+          onMainButtonTapped: useEmailPasswordAuthentication,
+          onCreateAccountTapped: () { Navigator.push(context, SignUpPage.route()); },
+          title: 'Welcome to Boing!',
+          subtitle: 'Enter your email address to sign in.',
+          mainButtonTitle: 'SIGN IN',
+          form: Column(
+            children: [
+              TextField(
+                decoration: const InputDecoration(labelText: 'Email'),
+                controller: emailController,
+              ),
+              TextField(
+                decoration: const InputDecoration(labelText: 'Password'),
+                controller: passwordController,
+              ),
+            ],
+          ),
+          onForgotPassword: () {},
+          onSignInWithGoogle: useGoogleAuthentication,
+          // onSignInWithApple: useAppleAuthentication,
+        )
+      )
+    );
+  }
+
+  Future<void> useEmailPasswordAuthentication() async {
     try {
       final userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
@@ -35,83 +66,26 @@ class _LoginPageState extends State<LoginPage> {
               password: passwordController.text.trim());
       print(userCredential);
     } on FirebaseAuthException catch (e) {
-      scaffoldKey.currentState?.showSnackBar(
-        SnackBar(content: Text(e.message ?? "Failed to log in"))
-      );
+      print("exception->$e");
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Sign In.',
-                style: TextStyle(
-                  fontSize: 50,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 30),
-              TextFormField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  hintText: 'Email',
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextFormField(
-                controller: passwordController,
-                decoration: const InputDecoration(
-                  hintText: 'Password',
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await loginUserWithEmailAndPassword();
-                },
-                child: const Text(
-                  'SIGN IN',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, SignUpPage.route());
-                },
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Don\'t have an account? ',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    children: [
-                      TextSpan(
-                        text: 'Sign Up',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> useGoogleAuthentication() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      print(userCredential);
+    } on Exception catch (e) {
+      // TODO
+    }
   }
 }

@@ -27,7 +27,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.boing"
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion 34 // flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -48,7 +48,7 @@ android {
         applicationId "com.example.boing"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 20
+        minSdkVersion 34
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

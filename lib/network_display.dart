@@ -71,10 +71,8 @@ class NetworkDisplay extends StatelessWidget {
                       home: reqSnapshot.data!.docs[index].data()["home"],
                       photo: reqSnapshot.data!.docs[index].data()["photo"],
                     )),
-                    tickBuilder == null ? Container()
-                      : tickBuilder!(snapshot, index),
-                    crossBuilder == null ? Container()
-                      : crossBuilder!(snapshot, index),
+                    if (tickBuilder != null) tickBuilder!(snapshot, index),
+                    if (crossBuilder != null) crossBuilder!(snapshot, index),
                   ])
                 );
               }
