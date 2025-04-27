@@ -9,7 +9,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'friends_page.dart';
 import 'network_display.dart';
-import 'details.dart';
+import 'profile_page.dart';
+import 'friend_page.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -102,28 +103,14 @@ class HomePageState extends State<HomePage> {
       ),
       drawer: Drawer(
         child: ListView(children: <Widget>[
-          StreamBuilder(
-            stream: FirebaseFirestore.instance.collection("data")
-              .doc(FirebaseAuth.instance.currentUser!.uid)
-              .snapshots(),
-            builder: (context, snapshot) {
-              String name = "";
-              if (snapshot.connectionState != ConnectionState.waiting
-                  && snapshot.hasData) {
-                if (snapshot.data!.data()?.containsKey("name") ?? false) {
-                  name = snapshot.data!["name"];
-                }
-              }
-              return UserAccountsDrawerHeader(
-                accountName: Text(name),
-                accountEmail: Text(location),
-                currentAccountPicture: const CircleAvatar(
-                  backgroundColor: Colors.black26,
-                  child: Text(":)"),
-                ),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
-              );
-            }
+          UserAccountsDrawerHeader(
+            accountName: Text(FirebaseAuth.instance.currentUser?.displayName ?? ""),
+            accountEmail: Text(location),
+            currentAccountPicture: const CircleAvatar(
+              backgroundColor: Colors.black26,
+              child: Text(":)"),
+            ),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary)
           ),
           ListTile(
             title: const Text("Friends"),
@@ -133,10 +120,10 @@ class HomePageState extends State<HomePage> {
             ))
           ),
           ListTile(
-            title: const Text("Details"),
+            title: const Text("Profile"),
             trailing: const Icon(Icons.list_alt),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (BuildContext context) => const DetailsPage()
+              builder: (BuildContext context) => const ProfilePage()
             ))
           ),
           ListTile(
@@ -171,6 +158,9 @@ class HomePageState extends State<HomePage> {
             noDataWidget: const Center(child: Text("Time to make some friends")),
             queryUpdate: (query) =>
               query.where("location", isEqualTo: location),
+            tapCallback: (uid) => Navigator.of(context).push(MaterialPageRoute(
+              builder: (BuildContext context) => FriendPage(uid: uid)
+            )),
           )
         ),
       ])

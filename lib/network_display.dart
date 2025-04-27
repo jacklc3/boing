@@ -14,7 +14,7 @@ class NetworkDisplay extends StatelessWidget {
   final Widget noDataWidget;
   final Widget Function(AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>, int)? tickBuilder;
   final Widget Function(AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>, int)? crossBuilder;
-  final Function? tapCallback;
+  final void Function(String)? tapCallback;
   final Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>>) queryUpdate;
 
   const NetworkDisplay({
@@ -59,21 +59,24 @@ class NetworkDisplay extends StatelessWidget {
             return ListView.builder(
               itemCount: reqSnapshot.data!.docs.length,
               itemBuilder: (context, index) {
-                return Container( 
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey, width: 2.0),
-                    )
-                  ),
-                  child: Row(children: <Widget>[
-                    Expanded(child: FriendCard(
-                      name: reqSnapshot.data!.docs[index].data()["name"],
-                      home: reqSnapshot.data!.docs[index].data()["home"],
-                      photo: reqSnapshot.data!.docs[index].data()["photo"],
-                    )),
-                    if (tickBuilder != null) tickBuilder!(snapshot, index),
-                    if (crossBuilder != null) crossBuilder!(snapshot, index),
-                  ])
+                return InkWell(
+                  onTap: tapCallback == null ? null :  () => tapCallback!(reqSnapshot.data!.docs[index].id),
+                  child: Container( 
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey, width: 2.0),
+                      )
+                    ),
+                    child: Row(children: <Widget>[
+                      Expanded(child: FriendCard(
+                        name: reqSnapshot.data!.docs[index].data()["name"],
+                        home: reqSnapshot.data!.docs[index].data()["status"],
+                        photo: reqSnapshot.data!.docs[index].data()["photo"],
+                      )),
+                      if (tickBuilder != null) tickBuilder!(snapshot, index),
+                      if (crossBuilder != null) crossBuilder!(snapshot, index),
+                    ])
+                  )
                 );
               }
             );

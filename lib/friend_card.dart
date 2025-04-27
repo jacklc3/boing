@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
 class FriendCard extends StatelessWidget {
-  static const String defaultPhoto = 
-    "https://www.clipartmax.com/png/middle/214-2143742_individuals-whatsapp-profile-picture-icon.png";
-
   final String? name;
   final String? home;
   final String? photo;
@@ -24,7 +21,8 @@ class FriendCard extends StatelessWidget {
           width: 75,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(photo ?? defaultPhoto),
+              image: photo == null ? const AssetImage('assets/default_icon.png')
+                : NetworkImage(photo!) as ImageProvider<Object>,
               fit: BoxFit.cover,
             ),
             shape: BoxShape.circle,

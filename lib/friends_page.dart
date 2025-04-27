@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'qr_scanner_page.dart';
 import 'request_page.dart';
+import 'friend_page.dart';
 
 class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
@@ -30,10 +31,13 @@ class FriendsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: const NetworkDisplay(
-          group: "friends",
-          noDataWidget: Center(child: Text("Time to make some friends!"))
-        )
+      body: NetworkDisplay(
+        group: "friends",
+        noDataWidget: const Center(child: Text("Time to make some friends!")),
+        tapCallback: (uid) => Navigator.of(context).push(MaterialPageRoute(
+          builder: (BuildContext context) => FriendPage(uid: uid)
+        )),
+      )
     );
   }
 }
