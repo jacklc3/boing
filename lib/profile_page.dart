@@ -32,64 +32,58 @@ class ProfilePage extends StatelessWidget {
           }
 
           var data = snapshot.data!.data()!;
-          return SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Stack(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: const Image(image: AssetImage('assets/default_icon.png'))
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    data["name"] ?? "",
-                    style: Theme.of(context).textTheme.headlineMedium),
-                  Text(
-                    "Last online: ${
-                      data["time"] == null ? "--"
-                        : DateFormat('MM/dd/yyyy, hh:mm a').format(data["time"].toDate())
-                    }",
-                    style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 20),
-                  if (currentUser.email != null)
-                    UserInfoField(label: "Email:", info: currentUser.email!),
-                  if (currentUser.phoneNumber != null)
-                    UserInfoField(label: "Phone:", info: currentUser.phoneNumber!),
-                  if (data["location"] != null)
-                    UserInfoField(label: "Location:", info: data["location"]),
-                  UserInfoField(label: "Status:", info: data["status"] ?? ""),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: 200,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext context) => const UpdateProfilePage()
-                      )),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        side: BorderSide.none,
-                        shape: const StadiumBorder()
-                      ),
-                      child: const Text(
-                        "Edit Profile",
-                        style: TextStyle(color: Colors.black)
+          return Container(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Stack(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: const Image(image: AssetImage('assets/default_icon.png'))
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  data["name"] ?? "",
+                  style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  "Last online: ${
+                    data["time"] == null ? "--"
+                      : DateFormat('MM/dd/yyyy, hh:mm a').format(data["time"].toDate())
+                  }",
+                  style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 20),
+                UserInfoField(label: "Location:", info: data["location"] ?? "--"),
+                UserInfoField(label: "Email:", info: currentUser.email ?? ""),
+                UserInfoField(label: "Phone:", info: currentUser.phoneNumber ?? ""),
+                UserInfoField(label: "Status:", info: data["status"] ?? ""),
+                Expanded(child: Container()),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => const UpdateProfilePage()
+                    )),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Edit Profile",
+                      style: TextStyle(color: Colors.white)
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 10),
+              ],
             ),
           );
         }

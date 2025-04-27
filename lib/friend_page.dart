@@ -34,158 +34,148 @@ class FriendPage extends StatelessWidget {
           }
 
           var data = snapshot.data!.data()!;
-          return SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Stack(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: const Image(image: AssetImage('assets/default_icon.png'))
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    data["name"] ?? "",
-                    style: Theme.of(context).textTheme.headlineMedium),
-                  Text(
-                    "Last online: ${
-                      data["time"] == null ? "--"
-                        : DateFormat('MM/dd/yyyy, hh:mm a').format(data["time"].toDate())
-                    }",
-                    style: Theme.of(context).textTheme.bodyMedium),
-                  if (data["status"] != null)
-                    Align(
-                      alignment: Alignment.center,
-                      child: Row(
-                        children: <Widget>[
-                          const Expanded(child: Divider()),       
-                          Text(
-                            ' STATUS ',
-                            style: bodyStyle.copyWith(color: kcMediumGreyColor),
-                            textAlign: TextAlign.start
-                          ),
-                          const Expanded(child: Divider()),
-                        ]
-                      )
-                    ),
-                  if (data["status"] != null)
-                    const SizedBox(height: 20),
-                  if (data["status"] != null)
-                    UserInfoField(label: "Status:", info: data["status"] ?? ""),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: 200,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Are you sure?'),
-                            content: const Text('Deleting friends cannot be undone'),
-                            actions: <Widget>[
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  FirebaseFirestore.instance
-                                    .collection("network")
-                                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                                    .set({
-                                      "friends": FieldValue.arrayRemove([uid])},
-                                      SetOptions(merge: true),
-                                    );
-                                  FirebaseFirestore.instance
-                                    .collection("network")
-                                    .doc(uid)
-                                    .set({
-                                      "friends": FieldValue.arrayRemove([
-                                        FirebaseAuth.instance.currentUser!.uid
-                                      ])},
-                                      SetOptions(merge: true),
-                                    );
-                                  Navigator.pop(context);
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('Confirm'),
-                              ),
-                            ],
-                          )
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        elevation: 0,
-                        side: BorderSide.none,
-                        shape: const StadiumBorder()
-                      ),
-                      child: const Text(
-                        "Delete",
-                        style: TextStyle(color: Colors.white)
+          return Container(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Stack(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: const Image(image: AssetImage('assets/default_icon.png'))
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  data["name"] ?? "",
+                  style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  "Last online: ${
+                    data["time"] == null ? "--"
+                      : DateFormat('MM/dd/yyyy, hh:mm a').format(data["time"].toDate())
+                  }",
+                  style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.center,
+                  child: Row(
+                    children: <Widget>[
+                      const Expanded(child: Divider()),       
+                      Text(
+                        ' STATUS ',
+                        style: bodyStyle.copyWith(color: kcMediumGreyColor),
+                        textAlign: TextAlign.start
+                      ),
+                      const Expanded(child: Divider()),
+                    ]
+                  )
+                ),
+                const SizedBox(height: 10),
+                Center(child: Text(data["status"] ?? "--")),
+                const SizedBox(height: 10),
+                const Divider(),
+                Expanded(child: Container()),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Message",
+                      style: TextStyle(color: Colors.white)
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Poke",
+                      style: TextStyle(color: Colors.white)
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Are you sure?'),
+                          content: const Text('Deleting friends cannot be undone'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                FirebaseFirestore.instance
+                                  .collection("network")
+                                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                                  .set({
+                                    "friends": FieldValue.arrayRemove([uid])},
+                                    SetOptions(merge: true),
+                                  );
+                                FirebaseFirestore.instance
+                                  .collection("network")
+                                  .doc(uid)
+                                  .set({
+                                    "friends": FieldValue.arrayRemove([
+                                      FirebaseAuth.instance.currentUser!.uid
+                                    ])},
+                                    SetOptions(merge: true),
+                                  );
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Confirm'),
+                            ),
+                          ],
+                        )
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.2),
+                      elevation: 0,
+                      side: BorderSide.none,
+                      shape: const StadiumBorder()
+                    ),
+                    child: const Text(
+                      "Delete",
+                      style: TextStyle(color: Colors.red)
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
             ),
           );
         }
       )
-    );
-  }
-}
-
-class UserInfoField extends StatelessWidget {
-  const UserInfoField({
-    super.key,
-    required this.label,
-    required this.info,
-  });
-
-  final String label;
-  final String info;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0 / 2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label),
-          ),
-          Expanded(
-            flex: 3,
-            child: TextFormField(
-              readOnly: true,
-              decoration: InputDecoration(
-                hintText: info,
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16.0 * 1.5, vertical: 16.0
-                ),
-                border: const OutlineInputBorder(
-                  borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.all(Radius.circular(50)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
