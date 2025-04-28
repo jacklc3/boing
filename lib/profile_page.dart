@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'update_profile_page.dart';
 import 'package:intl/intl.dart';
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({
-    super.key,
-  });
+import 'change_password_page.dart';
+
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => ProfilePageState();
+}
+
+class ProfilePageState extends State<ProfilePage> {
+  final controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +53,46 @@ class ProfilePage extends StatelessWidget {
                         child: const Image(image: AssetImage('assets/default_icon.png'))
                       ),
                     ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 35,
+                        height: 35,
+                        decoration:
+                        BoxDecoration(
+                          borderRadius: BorderRadius.circular(100),
+                          color: Theme.of(context).colorScheme.inversePrimary
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.black,
+                          size: 20
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  data["name"] ?? "",
-                  style: Theme.of(context).textTheme.headlineMedium),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 50),
+                    Text(
+                      data["name"] ?? "-",
+                      style: Theme.of(context).textTheme.headlineMedium
+                    ),
+                    Stack(
+                      children: [
+                        const SizedBox(width: 50),
+                        IconButton(
+                          onPressed: () => changeName(context, data["name"] ?? ""),
+                          icon: const Icon(Icons.edit, color: Colors.black45),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
                 Text(
                   "Last online: ${
                     data["time"] == null ? "--"
@@ -60,33 +100,159 @@ class ProfilePage extends StatelessWidget {
                   }",
                   style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 20),
-                UserInfoField(label: "Location:", info: data["location"] ?? "--"),
-                UserInfoField(label: "Email:", info: currentUser.email ?? ""),
-                UserInfoField(label: "Phone:", info: currentUser.phoneNumber ?? ""),
-                UserInfoField(label: "Status:", info: data["status"] ?? ""),
+                UserInfoField(
+                  label: "Location:",
+                  info: data["location"] ?? ""
+                ),
+                UserInfoField(
+                  label: "Email:",
+                  info: currentUser.email ?? ""
+                ),
+                UserInfoField(
+                  label: "Status:",
+                  info: data["status"] ?? "",
+                  editCallback: () => changeStatus(context, data["status"] ?? ""),
+                ),
+                const SizedBox(height: 10),
+                if (currentUser.providerData .map((e) => e.providerId)
+                    .contains("password"))
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => const ChangePasswordPage()
+                      )),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Change Password",
+                        style: TextStyle(color: Colors.white)
+                      ),
+                    ),
+                  ),
                 Expanded(child: Container()),
                 SizedBox(
                   width: MediaQuery.of(context).size.width,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => const UpdateProfilePage()
-                    )),
+                    onPressed: () => deleteAccountConfirm(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                      backgroundColor: Colors.red.withOpacity(0.2),
                       elevation: 0,
                     ),
                     child: const Text(
-                      "Edit Profile",
-                      style: TextStyle(color: Colors.white)
+                      "Delete Account",
+                      style: TextStyle(color: Colors.red)
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
               ],
             ),
           );
         }
+      )
+    );
+  }
+
+  void deleteAccountConfirm(BuildContext context) {
+    var currentUser = FirebaseAuth.instance.currentUser!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Are you sure?'),
+        content: Column(
+          children: [
+            const Text('Deleting account is permanent.'),
+            const Text('Type email to confirm.'),
+            TextField(controller: controller),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text != currentUser.email) {
+                return;
+              }
+              FirebaseFirestore.instance.collection("data").doc(currentUser.uid).delete();
+              FirebaseFirestore.instance.collection("network").doc(currentUser.uid).delete();
+              currentUser.delete();
+              FirebaseAuth.instance.signOut();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      )
+    );
+  }
+
+  void changeName(BuildContext context, String name) {
+    controller.text = name;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Name'),
+        content: TextField(
+          controller: controller,
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              FirebaseAuth.instance.currentUser!
+                .updateDisplayName(controller.text.trim());
+              FirebaseFirestore.instance.collection("data")
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .set(
+                  {"name": controller.text.trim()},
+                  SetOptions(merge: true),
+                );
+              Navigator.pop(context);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      )
+    );
+  }
+
+  void changeStatus(BuildContext context, String status) {
+    controller.text = status;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Status'),
+        content: TextField(
+          controller: controller,
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              FirebaseFirestore.instance.collection("data")
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .set(
+                  {"status": controller.text},
+                  SetOptions(merge: true),
+                );
+              Navigator.pop(context);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
       )
     );
   }
@@ -97,10 +263,12 @@ class UserInfoField extends StatelessWidget {
     super.key,
     required this.label,
     required this.info,
+    this.editCallback
   });
 
   final String label;
   final String info;
+  final void Function()? editCallback;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +280,7 @@ class UserInfoField extends StatelessWidget {
             child: Text(label),
           ),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: TextFormField(
               readOnly: true,
               decoration: InputDecoration(
@@ -125,6 +293,10 @@ class UserInfoField extends StatelessWidget {
                 border: const OutlineInputBorder(
                   borderSide: BorderSide.none,
                   borderRadius: BorderRadius.all(Radius.circular(50)),
+                ),
+                suffixIcon: editCallback == null ? null : IconButton(
+                  onPressed: editCallback!,
+                  icon: const Icon(Icons.edit, color: Colors.black54),
                 ),
               ),
             ),

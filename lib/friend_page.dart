@@ -120,44 +120,7 @@ class FriendPage extends StatelessWidget {
                   width: MediaQuery.of(context).size.width,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Are you sure?'),
-                          content: const Text('Deleting friends cannot be undone'),
-                          actions: <Widget>[
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                FirebaseFirestore.instance
-                                  .collection("network")
-                                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                                  .set({
-                                    "friends": FieldValue.arrayRemove([uid])},
-                                    SetOptions(merge: true),
-                                  );
-                                FirebaseFirestore.instance
-                                  .collection("network")
-                                  .doc(uid)
-                                  .set({
-                                    "friends": FieldValue.arrayRemove([
-                                      FirebaseAuth.instance.currentUser!.uid
-                                    ])},
-                                    SetOptions(merge: true),
-                                  );
-                                Navigator.pop(context);
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Confirm'),
-                            ),
-                          ],
-                        )
-                      );
-                    },
+                    onPressed: () => deleteFriendConfirm(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.withOpacity(0.2),
                       elevation: 0,
@@ -175,6 +138,45 @@ class FriendPage extends StatelessWidget {
             ),
           );
         }
+      )
+    );
+  }
+
+  void deleteFriendConfirm(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Are you sure?'),
+        content: const Text('Deleting friends cannot be undone'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              FirebaseFirestore.instance
+                .collection("network")
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .set({
+                  "friends": FieldValue.arrayRemove([uid])},
+                  SetOptions(merge: true),
+                );
+              FirebaseFirestore.instance
+                .collection("network")
+                .doc(uid)
+                .set({
+                  "friends": FieldValue.arrayRemove([
+                    FirebaseAuth.instance.currentUser!.uid
+                  ])},
+                  SetOptions(merge: true),
+                );
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
       )
     );
   }

@@ -30,10 +30,14 @@ class SignUpPageState extends State<SignUpPage> {
   Future<void> createUser() async {
     setState(() { busy = true; });
     try {
-      FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailController.text.trim(),
           password: passwordController.text.trim()
         ).then((uc) => uc.user?.updateDisplayName(nameController.text));
+      nameController.clear();
+      emailController.clear();
+      passwordController.clear();
+      setState(() { busy = false; });
     } on FirebaseAuthException catch (e) {
       print(e.message ?? "Failed to create an account");
       setState(() { busy = false; });
