@@ -188,7 +188,6 @@ class ProfilePageState extends State<ProfilePage> {
               FirebaseFirestore.instance.collection("data").doc(currentUser.uid).delete();
               FirebaseFirestore.instance.collection("network").doc(currentUser.uid).delete();
               currentUser.delete();
-              FirebaseAuth.instance.signOut();
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text("Account deleted"),
               ));
