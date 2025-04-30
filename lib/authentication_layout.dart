@@ -88,7 +88,7 @@ class AuthenticationLayout extends StatelessWidget {
             Text(
               validationMessage!,
               style: bodyStyle.copyWith(color: Colors.red,),
-              textAlign: TextAlign.start
+              textAlign: TextAlign.center
             ),
           if (validationMessage != null) verticalSpaceRegular,
           GestureDetector(

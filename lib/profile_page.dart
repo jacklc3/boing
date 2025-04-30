@@ -20,6 +20,7 @@ class ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     var currentUser = FirebaseAuth.instance.currentUser!;
     return Scaffold(
+      resizeToAvoidBottomInset : false,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Profile"),
@@ -133,19 +134,22 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                Expanded(child: Container()),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () => deleteAccountConfirm(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.2),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "Delete Account",
-                      style: TextStyle(color: Colors.red)
+                Expanded(
+                  child: Container(alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => deleteAccountConfirm(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.2),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          "Delete Account",
+                          style: TextStyle(color: Colors.red)
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -164,9 +168,10 @@ class ProfilePageState extends State<ProfilePage> {
       builder: (context) => AlertDialog(
         title: const Text('Are you sure?'),
         content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Deleting account is permanent.'),
-            const Text('Type email to confirm.'),
+            const Text('Deleting an account is permanent.'),
+            const Text('Type in email to confirm.'),
             TextField(controller: controller),
           ],
         ),
@@ -176,7 +181,7 @@ class ProfilePageState extends State<ProfilePage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
+            onPressed: () {
               if (controller.text != currentUser.email) {
                 return;
               }
@@ -184,6 +189,9 @@ class ProfilePageState extends State<ProfilePage> {
               FirebaseFirestore.instance.collection("network").doc(currentUser.uid).delete();
               currentUser.delete();
               FirebaseAuth.instance.signOut();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text("Account deleted"),
+              ));
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text('Confirm'),

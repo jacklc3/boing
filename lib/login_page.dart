@@ -19,6 +19,7 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool busy = false;
+  String? validationMessage;
 
   @override
   void dispose() {
@@ -55,6 +56,7 @@ class LoginPageState extends State<LoginPage> {
           onForgotPassword: () {},
           onSignInWithGoogle: useGoogleAuthentication,
           // onSignInWithApple: useAppleAuthentication,
+          validationMessage: validationMessage,
           busy: busy,
         )
       )
@@ -64,14 +66,15 @@ class LoginPageState extends State<LoginPage> {
   Future<void> useEmailPasswordAuthentication() async {
     setState(() { busy = true; });
     try {
-      final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
               email: emailController.text.trim(),
               password: passwordController.text.trim());
-      print(userCredential);
-    } on FirebaseAuthException catch (e) {
-      print(e);
       setState(() { busy = false; });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        validationMessage = e.message;
+        busy = false;
+      });
     }
   }
 
@@ -84,11 +87,13 @@ class LoginPageState extends State<LoginPage> {
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      print(userCredential);
-    } on Exception catch (e) {
-      print(e);
+      await FirebaseAuth.instance.signInWithCredential(credential);
       setState(() { busy = false; });
+    } on Exception catch (e) {
+      setState(() { 
+        validationMessage = e.toString();
+        busy = false;
+      });
     }
   }
 }

@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 import 'friend_card.dart';
 
@@ -39,7 +38,17 @@ class NetworkDisplay extends StatelessWidget {
           return const Center(
             child: CircularProgressIndicator(),
           );
-        } else if (!snapshot.hasData || snapshot.data![group].isEmpty) {
+        } else if (!snapshot.hasData || snapshot.data?.data() == null) {
+          FirebaseFirestore.instance.collection("network")
+            .doc(FirebaseAuth.instance.currentUser!.uid).set({
+              "requests": [],
+              "friends": [],
+              },
+              SetOptions(merge: true),
+            );
+          return noDataWidget;
+        }
+        if (snapshot.data![group].isEmpty) {
           return noDataWidget;
         }
         return StreamBuilder(

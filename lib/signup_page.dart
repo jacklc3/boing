@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'authentication_layout.dart';
@@ -18,6 +19,7 @@ class SignUpPageState extends State<SignUpPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool busy = false;
+  String? validationMessage;
 
   @override
   void dispose() {
@@ -27,20 +29,34 @@ class SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  Future<void> createUser() async {
+  Future<void> createUser(BuildContext context) async {
     setState(() { busy = true; });
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailController.text.trim(),
           password: passwordController.text.trim()
-        ).then((uc) => uc.user?.updateDisplayName(nameController.text));
+        ).then((uc) => uc.user?.updateDisplayName(nameController.text.trim()));
+      await FirebaseFirestore.instance.collection("network")
+        .doc(FirebaseAuth.instance.currentUser!.uid).set({
+          "requests": [],
+          "friends": [],
+          },
+          SetOptions(merge: true),
+        );
       nameController.clear();
       emailController.clear();
       passwordController.clear();
       setState(() { busy = false; });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Account created"),
+        ));
+      }
     } on FirebaseAuthException catch (e) {
-      print(e.message ?? "Failed to create an account");
-      setState(() { busy = false; });
+      setState(() {
+        validationMessage = e.message ?? "Failed to create an account";
+        busy = false;
+      });
     }
   }
 
@@ -50,10 +66,10 @@ class SignUpPageState extends State<SignUpPage> {
       body: Padding(
         padding: const EdgeInsets.all(15.0),
         child: AuthenticationLayout(
-          onMainButtonTapped: createUser,
+          onMainButtonTapped: () => createUser(context),
           onBackPressed: () { Navigator.pop(context); },
           title: 'Create Account',
-          subtitle: 'Enter your name, email and password for sign up.',
+          subtitle: 'Enter your name, email and password to sign up.',
           mainButtonTitle: 'SIGN UP',
           form: Column(
             children: [
@@ -72,6 +88,7 @@ class SignUpPageState extends State<SignUpPage> {
               ),
             ],
           ),
+          validationMessage: validationMessage,
           showTermsText: true,
           busy: busy,
         )
