@@ -43,6 +43,13 @@ class SignUpPageState extends State<SignUpPage> {
           },
           SetOptions(merge: true),
         );
+      await FirebaseFirestore.instance.collection("data")
+        .doc(FirebaseAuth.instance.currentUser!.uid).set({
+          "name": nameController.text.trim(),
+          "time": FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
       nameController.clear();
       emailController.clear();
       passwordController.clear();

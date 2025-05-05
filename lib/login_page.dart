@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 import 'authentication_layout.dart';
 import 'signup_page.dart';
@@ -89,9 +90,9 @@ class LoginPageState extends State<LoginPage> {
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
       setState(() { busy = false; });
-    } on Exception catch (e) {
+    } on PlatformException catch (e) {
       setState(() { 
-        validationMessage = e.toString();
+        validationMessage = e.message ?? "Platform error occured";
         busy = false;
       });
     }
