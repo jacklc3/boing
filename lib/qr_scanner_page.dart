@@ -1,11 +1,8 @@
-import 'dart:io';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -35,21 +32,9 @@ class QrScannerPage extends StatefulWidget {
 
 class QrScannerPageState extends State<QrScannerPage> {
   bool scanning = false;
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  final MobileScannerController controller = MobileScannerController();
   final TextEditingController textController = TextEditingController();
-
-  // In order to get hot reload to work we need to pause the camera if the platform
-  // is android, or resume the camera if the platform is iOS.
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller!.resumeCamera();
-    }
-  }
+  TorchState _torchState = TorchState.off;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +153,27 @@ class QrScannerPageState extends State<QrScannerPage> {
               )
             ]
           ) : Column(children: <Widget>[
-            Expanded(flex: 4, child: buildQrView(context)),
+            Expanded(
+              flex: 4,
+              // CHANGED: Using the MobileScanner widget.
+              child: MobileScanner(
+                controller: controller,
+                // This is the callback that fires when a QR code is detected.
+                onDetect: (capture) {
+                  final List<Barcode> barcodes = capture.barcodes;
+                  if (barcodes.isNotEmpty) {
+                    final String? uid = barcodes.first.rawValue;
+                    if (uid != null && scanning) {
+                      // Set scanning to false immediately to prevent multiple scans.
+                      setState(() {
+                        scanning = false;
+                      });
+                      sendRequest(uid, context);
+                    }
+                  }
+                },
+              ),
+            ),
             Expanded(
               flex: 1,
               child: FittedBox(
@@ -182,32 +187,30 @@ class QrScannerPageState extends State<QrScannerPage> {
                       children: <Widget>[
                         Container(
                           margin: const EdgeInsets.all(8),
-                          child: FutureBuilder(
-                            future: controller?.getFlashStatus(),
-                            builder: (context, snapshot) {
-                              return IconButton(
-                                icon: (snapshot.data ?? false)
-                                  ? const Icon(Icons.flashlight_off_outlined)
-                                  : const Icon(Icons.flashlight_on_outlined),
-                                tooltip: "Toggle flashlight",
-                                onPressed: () async {
-                                  await controller?.toggleFlash();
-                                  setState(() {});
-                                },
-                              );
+                          child: IconButton(
+                            icon: Icon(
+                              _torchState == TorchState.off
+                                ? Icons.flashlight_off_outlined
+                                : Icons.flashlight_on_outlined),
+                            tooltip: "Toggle flashlight",
+                            onPressed: () async {
+                              await controller.toggleTorch();
+                              setState(() {
+                                _torchState = _torchState == TorchState.on
+                                  ? TorchState.off : TorchState.on;
+                              });
                             }
-                          )
+                          ),
                         ),
                         Container(
                           margin: const EdgeInsets.all(8),
                           child: IconButton(
-                            icon: const Icon(Icons.flip_camera_ios_outlined),
+                            icon: const Icon(
+                                Icons.flip_camera_ios_outlined),
                             tooltip: "Flip camera",
-                            onPressed: () async {
-                              await controller?.flipCamera();
-                              setState(() {});
-                            },
-                          )
+                            // CHANGED: Using the new controller's switchCamera method.
+                            onPressed: () => controller.switchCamera(),
+                          ),
                         )
                       ],
                     ),
@@ -219,37 +222,6 @@ class QrScannerPageState extends State<QrScannerPage> {
         )
       ])
     );
-  }
-
-  Widget buildQrView(BuildContext context) {
-    // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
-    var scanArea = (MediaQuery.of(context).size.width < 400 ||
-            MediaQuery.of(context).size.height < 400)
-        ? 150.0
-        : 300.0;
-    // To ensure the Scanner view is properly sizes after rotation
-    // we need to listen for Flutter SizeChanged notification and update controller
-    return QRView(
-      key: qrKey,
-      onQRViewCreated: (controller) => onQRViewCreated(controller, context),
-      overlay: QrScannerOverlayShape(
-        borderColor: Colors.red,
-        borderRadius: 10,
-        borderLength: 30,
-        borderWidth: 10,
-        cutOutSize: scanArea),
-      onPermissionSet: (ctrl, perms) => onPermissionSet(context, ctrl, perms),
-    );
-  }
-
-  void onQRViewCreated(QRViewController controller, BuildContext context) {
-    setState(() { this.controller = controller; });
-    controller.scannedDataStream.listen((scanData) async {
-      if (scanData.code != null) {
-        setState(() { scanning = false; });
-        sendRequest(scanData.code!, context);
-      }
-    });
   }
 
   void sendRequest(String uid, BuildContext context) async {
@@ -288,18 +260,9 @@ class QrScannerPageState extends State<QrScannerPage> {
     }
   }
 
-  void onPermissionSet(BuildContext context, QRViewController ctrl, bool perms) {
-    log('${DateTime.now().toIso8601String()}onPermissionSet $perms');
-    if (!perms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No permission')),
-      );
-    }
-  }
-
   @override
   void dispose() {
-    controller?.dispose();
+    controller.dispose();
     super.dispose();
   }
 }

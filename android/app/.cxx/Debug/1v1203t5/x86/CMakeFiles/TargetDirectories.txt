@@ -1,0 +1,2 @@
+/Users/jacock/repos/boing/android/app/.cxx/Debug/1v1203t5/x86/CMakeFiles/edit_cache.dir
+/Users/jacock/repos/boing/android/app/.cxx/Debug/1v1203t5/x86/CMakeFiles/rebuild_cache.dir
