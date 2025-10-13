@@ -1,11 +1,10 @@
 # boing
 
-A FLutter based project.
+A Flutter-based project designed to facilitate bumping into friends while travelling overseas. Once connected, it will notify you if you happen to be in the same city as your friend while abroad.
 
 ## Next steps
 
-- [ ] Add signup integration with Google, Apple etc. profiles
-- [ ] Prevent users from friend requesting ffriends
-- [ ] Add manual friend request option
-- [ ] Add settings page
-- [ ] Add deleting friends
+- [ ] Make QR code scanner independent of UID
+- [ ] Add notifications and simple messaging
+- [ ] Add user profile images
+- [ ] Add ability to disable notifications in certain cities (i.e. one's hometown)
