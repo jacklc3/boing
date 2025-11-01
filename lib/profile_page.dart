@@ -142,7 +142,7 @@ class ProfilePageState extends State<ProfilePage> {
                       child: ElevatedButton(
                         onPressed: () => deleteAccountConfirm(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.2),
+                          backgroundColor: Colors.red.withValues(alpha: 0.2),
                           elevation: 0,
                         ),
                         child: const Text(
@@ -293,7 +293,7 @@ class UserInfoField extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: info,
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                fillColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16.0 * 1.5, vertical: 16.0
                 ),

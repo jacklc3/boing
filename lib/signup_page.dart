@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import 'authentication_layout.dart';
 
@@ -36,6 +37,7 @@ class SignUpPageState extends State<SignUpPage> {
           email: emailController.text.trim(),
           password: passwordController.text.trim()
         ).then((uc) => uc.user?.updateDisplayName(nameController.text.trim()));
+      String qrid = Uuid().v4();
       await FirebaseFirestore.instance.collection("network")
         .doc(FirebaseAuth.instance.currentUser!.uid).set({
           "requests": [],
@@ -47,6 +49,7 @@ class SignUpPageState extends State<SignUpPage> {
         .doc(FirebaseAuth.instance.currentUser!.uid).set({
           "name": nameController.text.trim(),
           "time": FieldValue.serverTimestamp(),
+          "qrid": qrid,
           },
           SetOptions(merge: true),
         );
