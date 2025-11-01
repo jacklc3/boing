@@ -313,7 +313,6 @@ class QrScannerPageState extends State<QrScannerPage> {
       } else {
         status = UserStatus.exists;
       }
-      print(status);
 
       if (status == UserStatus.exists) {
         FirebaseFirestore.instance.collection("network").doc(networkDoc.id).update({
