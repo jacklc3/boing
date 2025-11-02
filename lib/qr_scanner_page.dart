@@ -40,6 +40,7 @@ class QrScannerPageState extends State<QrScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text("Add Friends"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -48,8 +49,8 @@ class QrScannerPageState extends State<QrScannerPage> {
             icon: const Icon(Icons.refresh),
             tooltip: "Reset QR code",
             onPressed: () => resetQrId(context)
-          ) 
-        ]
+          )
+        ],
       ),
       body: Column(children: <Widget>[
         Container(
@@ -58,7 +59,9 @@ class QrScannerPageState extends State<QrScannerPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               TextButton(
-                onPressed: () { setState(() { scanning = false; }); },
+                onPressed: () {
+                  setState(() { scanning = false; });
+                },
                 child: Text(
                   "QR Code",
                   style: TextStyle(
@@ -68,20 +71,23 @@ class QrScannerPageState extends State<QrScannerPage> {
                 ),
               ),
               TextButton(
-                onPressed: () { setState(() { scanning = true; }); },
+                onPressed: () {
+                  setState(() { scanning = true; });
+                },
                 child: Text(
                   "QR Scanner",
                   style: TextStyle(
-                    fontWeight: scanning ? FontWeight.bold : FontWeight.normal,
-                    color: Colors.white
-                  ),
+                      fontWeight:
+                        scanning ? FontWeight.bold : FontWeight.normal,
+                      color: Colors.white
+                    ),
                 ),
               ),
             ],
-          )
+          ),
         ),
         Expanded(
-          child: !scanning 
+          child: !scanning
             ? StreamBuilder(
                 stream: FirebaseFirestore.instance
                   .collection("data")
@@ -93,23 +99,47 @@ class QrScannerPageState extends State<QrScannerPage> {
                       snapshot.data!.data() == null) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  String qrid = snapshot.data!.data()!["qrid"] ?? "error";
+                  var data = snapshot.data!.data()!;
+                  final String? qrid = data["qrid"];
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                  if (qrid == null || qrid.isEmpty || qrid == "error") {
+                    return _buildQrErrorView(context);
+                  }
+                  return _buildQrCodeView(context, qrid);
+                })
+            : _buildQrScannerView(),
+        )
+      ]),
+    );
+  }
+
+  Widget _buildQrCodeView(BuildContext context, String qrid) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints viewportConstraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: viewportConstraints.maxHeight,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 30), // Top padding
                         QrImageView(
                           data: qrid,
                           version: QrVersions.auto,
-                          size: 200.0
+                          size: 200.0,
                         ),
                         const SizedBox(height: 20),
                         const Text(
                           "Manually copy code:",
-                          style: TextStyle(fontWeight: FontWeight.bold)
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -121,26 +151,27 @@ class QrScannerPageState extends State<QrScannerPage> {
                               tooltip: "Copy to clipboard",
                               onPressed: () async {
                                 try {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: qrid)
-                                  );
+                                  await Clipboard.setData(ClipboardData(text: qrid));
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Copied to clipboard")));
+                                      const SnackBar(
+                                        content: Text("Copied to clipboard")));
                                   }
                                 } catch (e) {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Failed to copy to clipboard")));
+                                      const SnackBar(
+                                        content:
+                                          Text("Failed to copy to clipboard")));
                                   }
                                 }
                               },
                             ),
-                          ]
+                          ],
                         ),
                         const Text(
                           "Manually add user:",
-                          style: TextStyle(fontWeight: FontWeight.bold)
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -154,12 +185,9 @@ class QrScannerPageState extends State<QrScannerPage> {
                                 decoration: InputDecoration(
                                   hintText: "Enter user code",
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(5.0)
-                                  ),
+                                    borderRadius: BorderRadius.circular(5.0)),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                    horizontal: 10
-                                  ),
+                                    vertical: 10, horizontal: 10),
                                 ),
                               ),
                             ),
@@ -171,79 +199,114 @@ class QrScannerPageState extends State<QrScannerPage> {
                                 textController.clear();
                               },
                             ),
-                          ]
-                        ),
-                      ]
-                    ),
-                  );
-                }
-              )
-            : Column(children: <Widget>[
-                Expanded(
-                  flex: 4,
-                  child: MobileScanner(
-                    controller: controller,
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      if (barcodes.isNotEmpty) {
-                        final String? qrid = barcodes.first.rawValue;
-                        if (qrid != null && scanning) {
-                          setState(() {
-                            scanning = false;
-                          });
-                          sendRequest(qrid, context);
-                        }
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            Container(
-                              margin: const EdgeInsets.all(8),
-                              child: IconButton(
-                                icon: Icon(
-                                  _torchState == TorchState.off
-                                    ? Icons.flashlight_off_outlined
-                                    : Icons.flashlight_on_outlined),
-                                tooltip: "Toggle flashlight",
-                                onPressed: () async {
-                                  await controller.toggleTorch();
-                                  setState(() {
-                                    _torchState = _torchState == TorchState.on
-                                      ? TorchState.off : TorchState.on;
-                                  });
-                                }
-                              ),
-                            ),
-                            Container(
-                              margin: const EdgeInsets.all(8),
-                              child: IconButton(
-                                icon: const Icon(
-                                    Icons.flip_camera_ios_outlined),
-                                tooltip: "Flip camera",
-                                onPressed: () => controller.switchCamera(),
-                              ),
-                            )
                           ],
                         ),
+                        const SizedBox(height: 20), // Bottom padding
                       ],
                     ),
                   ),
-                )
-              ])
-        )
-      ])
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildQrErrorView(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 60,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Could not load your QR Code",
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Your QR ID seems to be missing. Please try resetting it using the refresh button at the top right.",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrScannerView() {
+    return Column(children: <Widget>[
+      Expanded(
+        flex: 4,
+        child: MobileScanner(
+          controller: controller,
+          onDetect: (capture) {
+            final List<Barcode> barcodes = capture.barcodes;
+            if (barcodes.isNotEmpty) {
+              final String? qrid = barcodes.first.rawValue;
+              if (qrid != null && scanning) {
+                setState(() {
+                  scanning = false;
+                });
+                sendRequest(qrid, context);
+              }
+            }
+          },
+        ),
+      ),
+      Expanded(
+        flex: 1,
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    child: IconButton(
+                      icon: Icon(_torchState == TorchState.off
+                        ? Icons.flashlight_off_outlined
+                        : Icons.flashlight_on_outlined),
+                      tooltip: "Toggle flashlight",
+                      onPressed: () async {
+                        await controller.toggleTorch();
+                        setState(() {
+                          _torchState = _torchState == TorchState.on
+                            ? TorchState.off
+                            : TorchState.on;
+                        });
+                      }
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    child: IconButton(
+                      icon: const Icon(Icons.flip_camera_ios_outlined),
+                      tooltip: "Flip camera",
+                      onPressed: () => controller.switchCamera(),
+                    ),
+                  )
+                ],
+              ),
+            ],
+          ),
+        ),
+      )
+    ]);
   }
 
   void resetQrId(BuildContext context) {
@@ -252,7 +315,8 @@ class QrScannerPageState extends State<QrScannerPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset QR Code?'),
-        content: const Text('This will invalidate your old QR code. Are you sure?'),
+        content:
+          const Text('This will invalidate your old QR code. Are you sure?'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -261,7 +325,8 @@ class QrScannerPageState extends State<QrScannerPage> {
           TextButton(
             onPressed: () {
               String qrid = const Uuid().v4();
-              FirebaseFirestore.instance.collection("data")
+              FirebaseFirestore.instance
+                .collection("data")
                 .doc(currentUser.uid)
                 .update({"qrid": qrid});
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -284,7 +349,8 @@ class QrScannerPageState extends State<QrScannerPage> {
       return;
     }
 
-    var querySnapshot = await FirebaseFirestore.instance.collection("data")
+    var querySnapshot = await FirebaseFirestore.instance
+      .collection("data")
       .where("qrid", isEqualTo: qrid.trim())
       .limit(1)
       .get();
@@ -292,29 +358,34 @@ class QrScannerPageState extends State<QrScannerPage> {
     if (querySnapshot.docs.isEmpty) {
       status = UserStatus.bad;
     } else {
-      String foundQrid = querySnapshot.docs.first.id;
+      String foundUid = querySnapshot.docs.first.id;
 
       DocumentSnapshot networkDoc = await FirebaseFirestore.instance
-        .collection("network").doc(foundQrid).get();
-      Map<String, dynamic> networkData = networkDoc.data() as Map<String, dynamic>;
-      
-      if (!networkDoc.exists) { 
+        .collection("network")
+        .doc(foundUid)
+        .get();
+      Map<String, dynamic> networkData =
+          networkDoc.data() as Map<String, dynamic>;
+
+      if (!networkDoc.exists) {
         status = UserStatus.bad;
       } else if (networkDoc.id == uid) {
         status = UserStatus.self;
-      } else if (networkData.keys.contains("friends")
-          && networkData["friends"].contains(uid)) {
+      } else if (networkData.keys.contains("friends") &&
+          networkData["friends"].contains(uid)) {
         status = UserStatus.friends;
-      } else if (networkData.keys.contains("requests")
-          && networkData["requests"].contains(uid)) {
+      } else if (networkData.keys.contains("requests") &&
+          networkData["requests"].contains(uid)) {
         status = UserStatus.requested;
       } else {
         status = UserStatus.exists;
       }
 
       if (status == UserStatus.exists) {
-        FirebaseFirestore.instance.collection("network").doc(networkDoc.id).update({
-          "requests": FieldValue.arrayUnion([uid])
+        FirebaseFirestore.instance
+          .collection("network")
+          .doc(networkDoc.id)
+          .update({"requests": FieldValue.arrayUnion([uid])
         });
       }
     }

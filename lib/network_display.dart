@@ -69,7 +69,8 @@ class NetworkDisplay extends StatelessWidget {
               itemCount: reqSnapshot.data!.docs.length,
               itemBuilder: (context, index) {
                 return InkWell(
-                  onTap: tapCallback == null ? null : () => tapCallback!(reqSnapshot.data!.docs[index].id),
+                  onTap: tapCallback == null ? null
+                    : () => tapCallback!(reqSnapshot.data!.docs[index].id),
                   child: Container( 
                     decoration: const BoxDecoration(
                       border: Border(
