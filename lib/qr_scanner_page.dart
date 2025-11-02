@@ -108,7 +108,7 @@ class QrScannerPageState extends State<QrScannerPage> {
                         ),
                         const SizedBox(height: 20),
                         const Text(
-                          "Manually copy user code:",
+                          "Manually copy code:",
                           style: TextStyle(fontWeight: FontWeight.bold)
                         ),
                         Row(
@@ -295,9 +295,7 @@ class QrScannerPageState extends State<QrScannerPage> {
       String foundQrid = querySnapshot.docs.first.id;
 
       DocumentSnapshot networkDoc = await FirebaseFirestore.instance
-          .collection("network")
-          .doc(foundQrid)
-          .get();
+        .collection("network").doc(foundQrid).get();
       Map<String, dynamic> networkData = networkDoc.data() as Map<String, dynamic>;
       
       if (!networkDoc.exists) { 

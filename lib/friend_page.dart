@@ -34,22 +34,39 @@ class FriendPage extends StatelessWidget {
           }
 
           var data = snapshot.data!.data()!;
+          String? photo = data["photo"];
           return Container(
             padding: const EdgeInsets.all(15),
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                Stack(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: const Image(image: AssetImage('assets/default_icon.png'))
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(100),
+                    child: (photo != null && photo.isNotEmpty)
+                      ? Image.network(
+                        photo,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator()
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Image(
+                            image: AssetImage('assets/default_icon.png'),
+                            fit: BoxFit.cover
+                          );
+                        },
+                      )
+                      : const Image(
+                        image: AssetImage('assets/default_icon.png'),
+                        fit: BoxFit.cover,
                       ),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(

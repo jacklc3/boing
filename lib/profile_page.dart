@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+
 import 'package:intl/intl.dart';
 
 import 'change_password_page.dart';
@@ -15,6 +19,35 @@ class ProfilePage extends StatefulWidget {
 
 class ProfilePageState extends State<ProfilePage> {
   final controller = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  
+  Future<void> uploadProfilePicture() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    File file = File(image.path);
+    var currentUser = FirebaseAuth.instance.currentUser!;
+
+    try {
+      String refPath = 'profile_pictures/${currentUser.uid}.jpg';
+      var storageRef = FirebaseStorage.instance.ref(refPath);
+      await storageRef.putFile(file);
+      String url = await storageRef.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection("data").doc(currentUser.uid)
+          .update({"picture": url});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile picture updated!")));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to upload image: $e")));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +72,8 @@ class ProfilePageState extends State<ProfilePage> {
           }
 
           var data = snapshot.data!.data()!;
+          String? picUrl = data["photo"];
+
           return Container(
             padding: const EdgeInsets.all(15),
             child: Column(
@@ -51,24 +86,46 @@ class ProfilePageState extends State<ProfilePage> {
                       height: 120,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(100),
-                        child: const Image(image: AssetImage('assets/default_icon.png'))
+                        child: (picUrl != null && picUrl.isNotEmpty)
+                        ? Image.network(
+                            picUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator()
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Image(
+                                image: AssetImage('assets/default_icon.png'),
+                                fit: BoxFit.cover
+                              );
+                            },
+                          )
+                        : const Image(
+                            image: AssetImage('assets/default_icon.png'),
+                            fit: BoxFit.cover,
+                          ),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: Container(
-                        width: 35,
-                        height: 35,
-                        decoration:
-                        BoxDecoration(
-                          borderRadius: BorderRadius.circular(100),
-                          color: Theme.of(context).colorScheme.inversePrimary
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.black,
-                          size: 20
+                      child: GestureDetector(
+                        onTap: uploadProfilePicture, // <--- CALLS THE FUNCTION
+                        child: Container(
+                          width: 35,
+                          height: 35,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(100),
+                            color: Theme.of(context).colorScheme.inversePrimary
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.black,
+                            size: 20
+                          ),
                         ),
                       ),
                     ),
