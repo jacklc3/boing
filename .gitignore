@@ -38,7 +38,20 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Android NDK/CMake build cache
+app/.cxx
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Config files
+app/google-services.json
+Runner/GoogleService-Info.plist
+
+# Firebase CLI metadata
+firebase.json
+
+# Flutter performance jank metrics
+flutter_jank_metrics_*.json

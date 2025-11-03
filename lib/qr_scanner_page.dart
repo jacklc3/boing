@@ -40,7 +40,6 @@ class QrScannerPageState extends State<QrScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text("Add Friends"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -49,6 +48,11 @@ class QrScannerPageState extends State<QrScannerPage> {
             icon: const Icon(Icons.refresh),
             tooltip: "Reset QR code",
             onPressed: () => resetQrId(context)
+          ),
+          if (scanning) IconButton(
+            icon: const Icon(Icons.text_fields),
+            tooltip: "Manually add user",
+            onPressed: () => _manualAdd(context)
           )
         ],
       ),
@@ -77,10 +81,9 @@ class QrScannerPageState extends State<QrScannerPage> {
                 child: Text(
                   "QR Scanner",
                   style: TextStyle(
-                      fontWeight:
-                        scanning ? FontWeight.bold : FontWeight.normal,
-                      color: Colors.white
-                    ),
+                    fontWeight: scanning ? FontWeight.bold : FontWeight.normal,
+                    color: Colors.white
+                  ),
                 ),
               ),
             ],
@@ -89,25 +92,25 @@ class QrScannerPageState extends State<QrScannerPage> {
         Expanded(
           child: !scanning
             ? StreamBuilder(
-                stream: FirebaseFirestore.instance
-                  .collection("data")
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting ||
-                      !snapshot.hasData ||
-                      snapshot.data!.data() == null) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  var data = snapshot.data!.data()!;
-                  final String? qrid = data["qrid"];
+              stream: FirebaseFirestore.instance
+                .collection("data")
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    !snapshot.hasData ||
+                    snapshot.data!.data() == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                var data = snapshot.data!.data()!;
+                final String? qrid = data["qrid"];
 
-                  if (qrid == null || qrid.isEmpty || qrid == "error") {
-                    return _buildQrErrorView(context);
-                  }
-                  return _buildQrCodeView(context, qrid);
-                })
-            : _buildQrScannerView(),
+                if (qrid == null || qrid.isEmpty) {
+                  return _buildQrErrorView(context);
+                }
+                return _buildQrCodeView(context, qrid);
+              }
+            ) : _buildQrScannerView(),
         )
       ]),
     );
@@ -117,97 +120,43 @@ class QrScannerPageState extends State<QrScannerPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15.0),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center, 
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints viewportConstraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: viewportConstraints.maxHeight,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 30), // Top padding
-                        QrImageView(
-                          data: qrid,
-                          version: QrVersions.auto,
-                          size: 200.0,
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          "Manually copy code:",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(qrid),
-                            IconButton(
-                              icon: const Icon(Icons.copy),
-                              tooltip: "Copy to clipboard",
-                              onPressed: () async {
-                                try {
-                                  await Clipboard.setData(ClipboardData(text: qrid));
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Copied to clipboard")));
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                          Text("Failed to copy to clipboard")));
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                        const Text(
-                          "Manually add user:",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 250),
-                              child: TextField(
-                                controller: textController,
-                                decoration: InputDecoration(
-                                  hintText: "Enter user code",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(5.0)),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 10),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.send),
-                              tooltip: "Send request",
-                              onPressed: () async {
-                                sendRequest(textController.text, context);
-                                textController.clear();
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20), // Bottom padding
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          QrImageView(
+            data: qrid,
+            version: QrVersions.auto,
+            size: 200.0,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "Manually copy code:",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(qrid),
+              IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: "Copy to clipboard",
+                onPressed: () async {
+                  try {
+                    await Clipboard.setData(ClipboardData(text: qrid));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Copied to clipboard")));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Failed to copy")));
+                    }
+                  }
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -341,6 +290,43 @@ class QrScannerPageState extends State<QrScannerPage> {
     );
   }
 
+  void _manualAdd(BuildContext context) {
+    textController.clear(); 
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Manually Add User"),
+        content: TextField(
+          controller: textController,
+          decoration: InputDecoration(
+            hintText: "User code",
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(5.0),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 10,
+            ),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              sendRequest(textController.text, context);
+              textController.clear();
+              Navigator.pop(context);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void sendRequest(String qrid, BuildContext context) async {
     UserStatus status;
     String uid = FirebaseAuth.instance.currentUser!.uid;
@@ -391,10 +377,12 @@ class QrScannerPageState extends State<QrScannerPage> {
     }
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(toMessage(status)),
-        duration: const Duration(seconds: 2),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(toMessage(status)),
+          duration: const Duration(seconds: 2),
+        )
+      );
     }
   }
 
